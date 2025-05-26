@@ -1,32 +1,93 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { RootState } from './store';
+import Layout from './components/Layout';
+import { Login } from './components/auth/Login';
+import { Register } from './components/auth/Register';
+import Home from './pages/Home';
+import Appointments from './pages/Appointments';
 import { PatientManagement } from './pages/PatientManagement';
 import { DoctorManagement } from './pages/DoctorManagement';
-import ChatbotPage from './pages/ChatbotPage';
-import Home from './pages/Home';
-import Prediction from './pages/Prediction';
-import Appointments from './pages/Appointments';
-import Login from './pages/Login';
-import Layout from './components/Layout';
-import { Avatar } from '@mui/material';
-import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import Chatbot from './pages/Chatbot';
 
-function App() {
-  return (
-    <Router>
-      <Layout>
-        <Routes>
-          <Route path="/patients" element={<PatientManagement />} />
-          <Route path="/doctors" element={<DoctorManagement />} />
-          <Route path="/chatbot" element={<ChatbotPage />} />
-          <Route path="/prediction" element={<Prediction />} />
-          <Route path="/appointments" element={<Appointments />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={<Home />} />
-        </Routes>
-      </Layout>
-    </Router>
-  );
+interface ProtectedRouteProps {
+    children: React.ReactNode;
 }
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+    const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+    
+    if (!isAuthenticated) {
+        return <Navigate to="/login" />;
+    }
+
+    return <Layout>{children}</Layout>;
+};
+
+const App: React.FC = () => {
+    const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+
+    return (
+        <Router>
+            <Routes>
+                {/* Public routes */}
+                <Route 
+                    path="/login" 
+                    element={isAuthenticated ? <Navigate to="/" /> : <Login />} 
+                />
+                <Route 
+                    path="/register" 
+                    element={isAuthenticated ? <Navigate to="/" /> : <Register />} 
+                />
+
+                {/* Protected routes */}
+                <Route
+                    path="/"
+                    element={
+                        <ProtectedRoute>
+                            <Home />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/appointments"
+                    element={
+                        <ProtectedRoute>
+                            <Appointments />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/patients"
+                    element={
+                        <ProtectedRoute>
+                            <PatientManagement />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/doctors"
+                    element={
+                        <ProtectedRoute>
+                            <DoctorManagement />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/chatbot"
+                    element={
+                        <ProtectedRoute>
+                            <Chatbot />
+                        </ProtectedRoute>
+                    }
+                />
+
+                {/* Catch all route */}
+                <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+        </Router>
+    );
+};
 
 export default App;

@@ -6,6 +6,8 @@ export interface Appointment {
   time: string;
   status: 'scheduled' | 'completed' | 'cancelled';
   notes?: string;
+  service_type: string;
+  duration: number;
 }
 
 export interface AppointmentResponse {

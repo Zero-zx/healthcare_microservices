@@ -7,6 +7,9 @@ export interface Patient {
     email: string;
     address: string;
     medical_history?: string;
+    patient_type: 'guest' | 'offline' | 'remote';
+    preferred_contact_method?: 'phone' | 'email' | 'video';
+    timezone?: string;
     created_at: string;
     updated_at: string;
 }
@@ -28,6 +31,9 @@ export interface CreatePatientDto {
     email: string;
     address: string;
     medical_history?: string;
+    patient_type: 'guest' | 'offline' | 'remote';
+    preferred_contact_method?: 'phone' | 'email' | 'video';
+    timezone?: string;
 }
 
 export interface CreateDoctorDto {

@@ -17,6 +17,9 @@ import {
   Tooltip,
   Divider
 } from '@mui/material';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../store';
+import { logout } from '../store/slices/authSlice';
 import MenuIcon from '@mui/icons-material/Menu';
 import LogoutIcon from '@mui/icons-material/Logout';
 import HomeIcon from '@mui/icons-material/Home';
@@ -31,6 +34,8 @@ const drawerWidth = 240;
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
+  const { user } = useSelector((state: RootState) => state.auth);
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const handleDrawerToggle = () => {
@@ -38,7 +43,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    dispatch(logout());
     navigate('/login');
   };
 
@@ -90,6 +95,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         ))}
       </List>
       <Box sx={{ p: 2, textAlign: 'center' }}>
+        <Typography variant="body2" color="text.secondary" gutterBottom>
+          {user?.email}
+        </Typography>
         <Tooltip title="Logout">
           <Button
             color="error"
@@ -107,16 +115,15 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   );
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', background: 'linear-gradient(135deg, #e3f2fd 0%, #fce4ec 100%)' }}>
+    <Box sx={{ display: 'flex' }}>
       <CssBaseline />
       <AppBar
         position="fixed"
-        elevation={0}
         sx={{
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           ml: { sm: `${drawerWidth}px` },
-          background: 'linear-gradient(90deg, #1976d2 0%, #ff4081 100%)',
-          boxShadow: '0 2px 8px rgba(25, 118, 210, 0.10)',
+          bgcolor: 'background.paper',
+          boxShadow: 1,
         }}
       >
         <Toolbar>
@@ -129,10 +136,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Healthcare Portal
+          <Typography variant="h6" noWrap component="div" color="text.primary">
+            {menuItems.find(item => item.path === location.pathname)?.text || 'Home'}
           </Typography>
-          <Avatar sx={{ bgcolor: 'secondary.main', ml: 2 }}>U</Avatar>
         </Toolbar>
       </AppBar>
       <Box
@@ -144,14 +150,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           open={mobileOpen}
           onClose={handleDrawerToggle}
           ModalProps={{
-            keepMounted: true
+            keepMounted: true,
           }}
           sx={{
             display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': {
-              boxSizing: 'border-box',
-              width: drawerWidth
-            }
+            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
           }}
         >
           {drawer}
@@ -160,10 +163,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           variant="permanent"
           sx={{
             display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': {
-              boxSizing: 'border-box',
-              width: drawerWidth
-            }
+            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
           }}
           open
         >
@@ -174,11 +174,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: { xs: 1, sm: 3 },
+          p: 3,
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           minHeight: '100vh',
-          background: 'transparent',
-          transition: 'padding 0.2s',
+          bgcolor: 'background.default',
         }}
       >
         <Toolbar />

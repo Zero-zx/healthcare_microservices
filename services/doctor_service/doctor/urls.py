@@ -1,10 +1,12 @@
 from django.urls import path
 
 from .views import (DoctorListCreateView, DoctorRetrieveUpdateView,
-                    ScheduleListCreateView)
+                    ScheduleListCreateView, RegisterView, LoginView)
 
 urlpatterns = [
-    path('', DoctorListCreateView.as_view(), name='doctor-list-create'),
-    path('<uuid:user_id>/', DoctorRetrieveUpdateView.as_view(), name='doctor-retrieve-update'),
+    path('register/', RegisterView.as_view(), name='register'),
+    path('login/', LoginView.as_view(), name='login'),
+    path('doctors/', DoctorListCreateView.as_view(), name='doctor-list-create'),
+    path('doctors/<uuid:user_id>/', DoctorRetrieveUpdateView.as_view(), name='doctor-retrieve-update'),
     path('schedules/', ScheduleListCreateView.as_view(), name='schedule-list-create'),
 ]

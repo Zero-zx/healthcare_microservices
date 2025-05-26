@@ -7,7 +7,7 @@ const DOCTOR_API_URL = process.env.REACT_APP_DOCTOR_API_URL || 'http://localhost
 // Patient Services
 export const patientService = {
     getAll: async (): Promise<Patient[]> => {
-        const response = await axios.get(`${PATIENT_API_URL}/api/patients/`);
+        const response = await axios.get(`${PATIENT_API_URL}/api/patients/patients/`);
         return response.data;
     },
 
