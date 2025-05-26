@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+- Alway rememeber that project using Django + Docker for backend an typescript for frontend
+- Read [docker-compose.yml](mdc:docker-compose.yml) to understand api endpoints and use direct port like 8004, 8005
+- Frontend and backend need to be fit

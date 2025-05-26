@@ -1,0 +1,216 @@
+openapi: 3.0.0
+info:
+  title: Doctor Service API
+  description: API documentation for Doctor Service
+  version: v1
+servers:
+  - url: http://localhost:8003/api
+paths:
+  /doctors/:
+    get:
+      operationId: doctors_list
+      description: Retrieve a list of all doctors
+      responses:
+        '200':
+          description: Successful retrieval of doctors list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Doctor'
+      tags:
+        - doctors
+      security:
+        - BasicAuth: []
+    post:
+      operationId: doctors_create
+      description: Create a new doctor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Doctor'
+      responses:
+        '201':
+          description: Doctor created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Doctor'
+      tags:
+        - doctors
+      security:
+        - BasicAuth: []
+  /doctors/schedules/:
+    get:
+      operationId: doctors_schedules_list
+      description: Retrieve a list of all doctor schedules
+      responses:
+        '200':
+          description: Successful retrieval of schedules list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Schedule'
+      tags:
+        - doctors
+      security:
+        - BasicAuth: []
+    post:
+      operationId: doctors_schedules_create
+      description: Create a new doctor schedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Schedule'
+      responses:
+        '201':
+          description: Schedule created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+      tags:
+        - doctors
+      security:
+        - BasicAuth: []
+  /doctors/{user_id}/:
+    parameters:
+      - name: user_id
+        in: path
+        description: A UUID string identifying this doctor.
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: doctors_read
+      description: Retrieve a specific doctor by ID
+      responses:
+        '200':
+          description: Successful retrieval of doctor details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Doctor'
+      tags:
+        - doctors
+      security:
+        - BasicAuth: []
+    put:
+      operationId: doctors_update
+      description: Update all fields of a doctor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Doctor'
+      responses:
+        '200':
+          description: Doctor updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Doctor'
+      tags:
+        - doctors
+      security:
+        - BasicAuth: []
+    patch:
+      operationId: doctors_partial_update
+      description: Update specific fields of a doctor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Doctor'
+      responses:
+        '200':
+          description: Doctor partially updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Doctor'
+      tags:
+        - doctors
+      security:
+        - BasicAuth: []
+components:
+  schemas:
+    Doctor:
+      type: object
+      required:
+        - user_id
+        - name
+        - specialty
+        - license
+        - phone
+        - email
+      properties:
+        user_id:
+          title: User id
+          type: string
+          format: uuid
+        name:
+          title: Name
+          type: string
+          maxLength: 100
+          minLength: 1
+        specialty:
+          title: Specialty
+          type: string
+          maxLength: 100
+          minLength: 1
+        license:
+          title: License
+          type: string
+          maxLength: 50
+          minLength: 1
+        phone:
+          title: Phone
+          type: string
+          maxLength: 15
+          minLength: 1
+        email:
+          title: Email
+          type: string
+          format: email
+          maxLength: 254
+          minLength: 1
+    Schedule:
+      type: object
+      required:
+        - day_of_week
+        - time_slots
+        - doctor
+      properties:
+        id:
+          title: ID
+          type: integer
+          readOnly: true
+        day_of_week:
+          title: Day of week
+          type: string
+          maxLength: 10
+          minLength: 1
+        time_slots:
+          title: Time slots
+          type: object
+        doctor:
+          title: Doctor
+          type: string
+          format: uuid
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+security:
+  - BasicAuth: []

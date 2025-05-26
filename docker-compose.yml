@@ -1,0 +1,187 @@
+version: '3.9'
+
+services:
+  mysql_db:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: user_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: 123456
+      MYSQL_ALLOW_EMPTY_PASSWORD: "no"
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./seed_data.sql:/docker-entrypoint-initdb.d/seed_data.sql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  notification_service:
+    build: ./services/notification_service
+    container_name: notification_service
+    command: bash -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./services/notification_service:/app
+    ports:
+      - "8006:8000"
+    environment:
+      - EMAIL_HOST=smtp.gmail.com
+      - EMAIL_PORT=587
+      - EMAIL_HOST_USER=dthieu2512@gmail.com
+      - EMAIL_HOST_PASSWORD=gsic ghfo ceex guci
+    depends_on:
+      - mysql_db
+
+  admin_service:
+    build: ./services/admin_service
+    container_name: admin_service
+    command: bash -c "python3 manage.py migrate --noinput && python3 manage.py collectstatic --noinput && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./services/admin_service:/app
+    ports:
+      - "8002:8000"
+    environment:
+      - DATABASE_HOST=mysql_db
+      - DATABASE_PORT=3306
+      - DATABASE_NAME=admin_db
+      - DATABASE_USER=user
+      - DATABASE_PASSWORD=123456
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+
+  doctor_service:
+    build: ./services/doctor_service
+    container_name: doctor_service
+    command: bash -c "python manage.py migrate --noinput && python3 manage.py collectstatic --noinput && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./services/doctor_service:/app
+    ports:
+      - "8003:8000"
+    environment:
+      - DATABASE_HOST=mysql_db
+      - DATABASE_PORT=3306
+      - DATABASE_NAME=doctor_db
+      - DATABASE_USER=user
+      - DATABASE_PASSWORD=123456
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+
+  patient_service:
+    build: ./services/patient_service
+    container_name: patient_service
+    command: bash -c "python3 manage.py migrate --noinput && python3 manage.py collectstatic --noinput && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./services/patient_service:/app
+    ports:
+      - "8004:8000"
+    environment:
+      - DATABASE_HOST=mysql_db
+      - DATABASE_PORT=3306
+      - DATABASE_NAME=patient_db
+      - DATABASE_USER=user
+      - DATABASE_PASSWORD=123456
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+
+  appointment_service:
+    build: ./services/appointment_service
+    container_name: appointment_service
+    command: bash -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./services/appointment_service:/app
+    ports:
+      - "8005:8000"
+    environment:
+      - MONGODB_HOST=mongodb
+      - MONGODB_PORT=27017
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  laboratory_service:
+    build: ./services/laboratory_service
+    container_name: laboratory_service
+    command: bash -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./services/laboratory_service:/app
+    ports:
+      - "8007:8000"
+    depends_on:
+      - mysql_db
+      - mongodb
+
+  chatbot_service:
+    build: ./services/chatbot_service
+    container_name: chatbot_service
+    command: bash -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./services/chatbot_service:/app
+    ports:
+      - "8008:8000"
+    environment:
+      - DATABASE_HOST=mysql_db
+      - DATABASE_PORT=3306
+      - DATABASE_NAME=chatbot_db
+      - DATABASE_USER=user
+      - DATABASE_PASSWORD=123456
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+
+  gateway:
+    build: ./gateway
+    container_name: gateway
+    ports:
+      - "80:80"
+    volumes:
+      - ./gateway/src:/etc/nginx/conf.d
+    depends_on:
+      - admin_service
+      - doctor_service
+      - patient_service
+      - appointment_service
+      - chatbot_service
+
+volumes:
+  mysql_data:
+  mongodb_data:

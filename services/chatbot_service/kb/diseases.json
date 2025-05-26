@@ -1,0 +1,156 @@
+{
+  "flu": {
+    "name": "Cúm mùa",
+    "symptoms": ["sốt", "ho", "đau đầu", "mệt mỏi"],
+    "treatment": "Nghỉ ngơi, uống nước, uống paracetamol 500mg mỗi 6h"
+  },
+  "dengue": {
+    "name": "Sốt xuất huyết",
+    "symptoms": ["sốt", "đau đầu", "phát ban", "đau sau mắt"],
+    "treatment": "Uống nhiều nước, không dùng ibuprofen, theo dõi tiểu cầu"
+  },
+  "covid19": {
+    "name": "COVID-19",
+    "symptoms": [
+      "sốt",
+      "ho",
+      "mệt mỏi",
+      "mất vị giác",
+      "khó thở",
+      "đau họng",
+      "đau đầu",
+      "chảy nước mũi",
+      "đau nhức cơ thể",
+      "tiêu chảy",
+      "nôn",
+      "mất khứu giác"
+    ],
+    "treatment": "Cách ly, nghỉ ngơi, uống nhiều nước, dùng thuốc hạ sốt nếu cần, liên hệ y tế nếu khó thở."
+  },
+  "allergy": {
+    "name": "Dị ứng",
+    "symptoms": [
+      "ngứa",
+      "phát ban",
+      "hắt hơi",
+      "chảy nước mũi",
+      "ngứa mũi",
+      "ngứa mắt",
+      "ngứa vòm miệng",
+      "nghẹt mũi",
+      "chảy nước mắt",
+      "sưng môi",
+      "sưng lưỡi",
+      "sưng mặt",
+      "sưng cổ họng",
+      "nổi mề đay",
+      "sốc phản vệ",
+      "sưng/phù to tại vết đốt",
+      "ho",
+      "tức ngực",
+      "thở khò khè",
+      "khó thở",
+      "ngứa da",
+      "phát ban da",
+      "nổi mụn nước",
+      "đóng vảy da",
+      "tróc vảy da"
+    ],
+    "treatment": "Tránh tiếp xúc dị nguyên, dùng thuốc kháng histamin, glucocorticoid, epinephrine khi sốc phản vệ, liệu pháp miễn dịch nếu cần, đến bác sĩ nếu triệu chứng nặng.",
+    "description": "Dị ứng xảy ra khi hệ miễn dịch nhầm lẫn một chất vô hại thành mối đe dọa, tạo kháng thể IgE và giải phóng histamin gây triệu chứng. Dị ứng có thể do phấn hoa, thực phẩm, côn trùng, thuốc, mủ cao su... Sốc phản vệ là biến chứng nguy hiểm nhất, có thể đe dọa tính mạng.",
+    "risk_factors": "Người có tiền sử gia đình dị ứng, hen suyễn, trẻ em, người từng bị dị ứng hoặc hen suyễn.",
+    "diagnosis": "Chẩn đoán dựa vào thử nghiệm da, xét nghiệm máu tìm IgE đặc hiệu, khai thác tiền sử tiếp xúc dị nguyên.",
+    "immunotherapy": "Có thể dùng liệu pháp miễn dịch tiêm hoặc ngậm dưới lưỡi để giảm nhạy cảm dị nguyên."
+  },
+  "asthma": {
+    "name": "Hen phế quản",
+    "symptoms": ["khó thở", "ho", "khò khè", "tức ngực"],
+    "treatment": "Dùng thuốc giãn phế quản, tránh dị nguyên, đến bệnh viện nếu khó thở nặng."
+  },
+  "pneumonia": {
+    "name": "Viêm phổi",
+    "symptoms": ["sốt", "ho", "đau ngực", "khó thở", "ớn lạnh"],
+    "treatment": "Khám bác sĩ, dùng kháng sinh theo chỉ định, nghỉ ngơi, uống nhiều nước."
+  },
+  "migraine": {
+    "name": "Đau nửa đầu",
+    "symptoms": ["đau đầu", "buồn nôn", "nhạy cảm ánh sáng", "chóng mặt"],
+    "treatment": "Nghỉ ngơi nơi yên tĩnh, dùng thuốc giảm đau, tránh căng thẳng."
+  },
+  "gastritis": {
+    "name": "Viêm dạ dày",
+    "symptoms": [
+      "đau bụng",
+      "buồn nôn",
+      "ợ nóng",
+      "đầy hơi",
+      "khó tiêu",
+      "cồn cào dạ dày",
+      "nóng rát dạ dày",
+      "đầy bụng trên",
+      "nôn ra máu",
+      "đi ngoài ra máu"
+    ],
+    "treatment": "Ăn nhẹ, tránh đồ cay nóng, dùng thuốc theo chỉ định bác sĩ. Nếu do H.pylori: dùng kháng sinh. Nếu do NSAID/rượu: ngưng sử dụng. Có thể dùng thuốc ức chế bơm proton, chẹn H2, kháng acid. Bổ sung vitamin B12 nếu thiếu. Tuân thủ điều trị và tái khám định kỳ.",
+    "description": "Viêm dạ dày là tình trạng niêm mạc dạ dày bị viêm nhiễm, kích ứng, có thể cấp tính hoặc mạn tính. Bệnh gây đau, khó chịu vùng bụng trên, ảnh hưởng sinh hoạt và ăn uống.",
+    "causes": "Tổn thương hàng rào bảo vệ niêm mạc, tăng tiết acid, nhiễm khuẩn (H.pylori), dùng thuốc NSAID kéo dài, viêm dạ dày tự miễn, rượu bia, stress, bệnh lý khác.",
+    "risk_factors": "Người lớn tuổi, bệnh tự miễn, nhiễm trùng, dùng NSAID dài ngày, nghiện rượu, stress, sau hóa trị/xạ trị, bệnh lý khác (HIV/AIDS, Crohn, Celiac, ký sinh trùng, trào ngược mật).",
+    "complications": "Có thể gây loét, xuất huyết, thủng dạ dày, tăng nguy cơ ung thư dạ dày nếu mạn tính.",
+    "diagnosis": "Nội soi tiêu hóa, xét nghiệm H.pylori (phân, máu, test hơi thở), xét nghiệm máu ẩn trong phân, chụp X quang, sinh thiết niêm mạc.",
+    "prevention": "Không uống rượu bia, bỏ thuốc lá, dùng thuốc giảm đau theo chỉ định, ăn uống lành mạnh, tránh thực phẩm cay nóng/dầu mỡ, kiểm soát stress, tuân thủ điều trị và tái khám."
+  },
+  "hypertension": {
+    "name": "Tăng huyết áp",
+    "symptoms": [
+      "đau đầu",
+      "chóng mặt",
+      "mờ mắt",
+      "mệt mỏi",
+      "đau ngực",
+      "khó thở",
+      "tiểu máu",
+      "liệt nửa người"
+    ],
+    "treatment": "Ăn nhạt, tập thể dục, dùng thuốc hạ áp theo chỉ định, kiểm tra huyết áp định kỳ, không tự ý bỏ thuốc. Các nhóm thuốc: chẹn kênh calci, ức chế men chuyển, ức chế thụ thể, chẹn beta, lợi tiểu. Mục tiêu huyết áp <140/90mmHg.",
+    "description": "Tăng huyết áp là tình trạng huyết áp tâm thu ≥140mmHg và/hoặc tâm trương ≥90mmHg. Bệnh diễn biến thầm lặng, có thể gây biến chứng nguy hiểm như nhồi máu cơ tim, đột quỵ, suy thận nếu không điều trị.",
+    "causes": "90% là tăng huyết áp vô căn (không rõ nguyên nhân). 10% do bệnh thận, nội tiết, tim mạch, thuốc, ngộ độc thai nghén, rối loạn thần kinh.",
+    "risk_factors": "Nam giới, nữ mãn kinh, tiền sử gia đình, béo phì, ít vận động, hút thuốc, ăn mặn, stress, uống nhiều rượu bia, bệnh thận mạn, đái tháo đường, ngừng thở khi ngủ.",
+    "prevention": "Ăn giảm muối, nhiều rau xanh, ít mỡ động vật, tập thể dục đều, bỏ thuốc lá, giảm cân, hạn chế rượu bia, kiểm soát stress, duy trì BMI và vòng bụng hợp lý.",
+    "diagnosis": "Đo huyết áp tại phòng khám, tại nhà hoặc bằng Holter 24h. Tăng huyết áp khi huyết áp ≥140/90mmHg (phòng khám), ≥135/85mmHg (tại nhà).",
+    "complications": "Nhồi máu cơ tim, đột quỵ, suy thận, tổn thương võng mạc, lóc tách động mạch chủ, suy tim.",
+    "emergency": "Cơn tăng huyết áp: huyết áp >180/120mmHg, có hoặc không có tổn thương cơ quan đích. Cần điều trị cấp cứu nếu có dấu hiệu tổn thương cơ quan đích."
+  },
+  "chickenpox": {
+    "name": "Thủy đậu",
+    "symptoms": ["sốt", "phát ban", "ngứa", "mụn nước"],
+    "treatment": "Nghỉ ngơi, giữ vệ sinh da, tránh gãi, dùng thuốc giảm ngứa."
+  },
+  "hepatitis": {
+    "name": "Viêm gan",
+    "symptoms": [
+      "mệt mỏi",
+      "vàng da",
+      "nước tiểu sẫm",
+      "buồn nôn",
+      "sốt",
+      "không ngon miệng",
+      "đau bụng",
+      "nôn",
+      "đau cơ",
+      "đau khớp",
+      "ngứa",
+      "mất tập trung",
+      "trí nhớ kém",
+      "bầm tím",
+      "chảy máu"
+    ],
+    "treatment": "Nghỉ ngơi, ăn uống lành mạnh, tránh rượu bia, điều trị nguyên nhân (virus, tự miễn, độc chất), dùng thuốc theo chỉ định bác sĩ, ghép gan nếu suy gan nặng.",
+    "description": "Viêm gan là tình trạng các tế bào gan bị tổn thương và viêm, có thể do virus, rượu, thuốc, tự miễn hoặc nhiễm trùng khác. Bệnh tiến triển thầm lặng, có thể gây xơ gan, ung thư gan nếu không điều trị.",
+    "causes": "Virus viêm gan (A, B, C, D, E), rượu, thuốc, bệnh tự miễn, nhiễm trùng khác, độc chất.",
+    "types": "Viêm gan A, E lây qua đường tiêu hóa; B, C, D lây qua máu, tình dục, mẹ sang con. B, C có thể thành mạn tính, gây xơ gan, ung thư gan.",
+    "risk_factors": "Tiêm chích, truyền máu, quan hệ không an toàn, sống nơi vệ sinh kém, tiếp xúc máu/mẫu bệnh phẩm, dùng chung kim tiêm, bệnh tự miễn, uống rượu nhiều.",
+    "prevention": "Tiêm vắc-xin (A, B), không dùng chung kim tiêm, ăn chín uống sôi, quan hệ an toàn, hạn chế rượu bia, duy trì lối sống lành mạnh.",
+    "diagnosis": "Xét nghiệm máu (men gan, Bilirubin, PCR, kháng thể), siêu âm gan, CT, MRI, sinh thiết gan.",
+    "complications": "Xơ gan, suy gan, ung thư gan, xuất huyết tiêu hóa, tử vong nếu không điều trị."
+  }
+} 
