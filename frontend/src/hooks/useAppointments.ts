@@ -31,7 +31,7 @@ export const useAppointments = () => {
     try {
       dispatch(setLoading(true));
       const token = localStorage.getItem('token');
-      const response = await axios.get<AppointmentResponse>('http://localhost:8000/api/appointments', {
+      const response = await axios.get<AppointmentResponse>('http://localhost:8005/api/appointments', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -51,7 +51,7 @@ export const useAppointments = () => {
       dispatch(setLoading(true));
       const token = localStorage.getItem('token');
       const response = await axios.post<AppointmentResponse>(
-        'http://localhost:8000/api/appointments',
+        'http://localhost:8005/api/appointments',
         appointment,
         {
           headers: {

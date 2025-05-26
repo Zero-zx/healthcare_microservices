@@ -41,7 +41,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.username
 
 class Doctor(models.Model):
-    user_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     name = models.CharField(max_length=100)
     specialty = models.CharField(max_length=100)
     license = models.CharField(max_length=50, unique=True)

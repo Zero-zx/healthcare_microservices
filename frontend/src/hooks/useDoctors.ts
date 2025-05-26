@@ -19,7 +19,7 @@ interface DoctorState {
   error: string | null;
 }
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8003';
 
 export const useDoctors = () => {
   const dispatch = useAppDispatch();
