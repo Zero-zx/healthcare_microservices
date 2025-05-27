@@ -7,7 +7,7 @@ const DOCTOR_API_URL = process.env.REACT_APP_DOCTOR_API_URL || 'http://localhost
 // Patient Services
 export const patientService = {
     getAll: async (): Promise<Patient[]> => {
-        const response = await axios.get(`${PATIENT_API_URL}/api/patients/patients/`);
+        const response = await axios.get(`${PATIENT_API_URL}/api/patients/`);
         return response.data;
     },
 
@@ -34,19 +34,19 @@ export const patientService = {
 // Doctor Services
 export const doctorService = {
     getAll: async (): Promise<Doctor[]> => {
-        const response = await axios.get(`${DOCTOR_API_URL}/api/doctors/doctors/`);
+        const response = await axios.get(`${DOCTOR_API_URL}/api/doctors/`);
         return response.data;
     },
 
     getById: async (id: string): Promise<Doctor> => {
-        const response = await axios.get(`${DOCTOR_API_URL}/api/doctors/doctors/${id}/`);
+        const response = await axios.get(`${DOCTOR_API_URL}/api/doctors/${id}/`);
         return response.data;
     },
 
     create: async (doctor: CreateDoctorDto): Promise<Doctor> => {
         console.log('Creating doctor with data:', JSON.stringify(doctor, null, 2));
         try {
-            const response = await axios.post(`${DOCTOR_API_URL}/api/doctors/doctors/`, doctor);
+            const response = await axios.post(`${DOCTOR_API_URL}/api/doctors/`, doctor);
             console.log('Server response:', response.data);
             return response.data;
         } catch (error) {
@@ -63,11 +63,11 @@ export const doctorService = {
     },
 
     update: async (id: string, doctor: UpdateDoctorDto): Promise<Doctor> => {
-        const response = await axios.put(`${DOCTOR_API_URL}/api/doctors/doctors/${id}/`, doctor);
+        const response = await axios.put(`${DOCTOR_API_URL}/api/doctors/${id}/`, doctor);
         return response.data;
     },
 
     delete: async (id: string): Promise<void> => {
-        await axios.delete(`${DOCTOR_API_URL}/api/doctors/doctors/${id}/`);
+        await axios.delete(`${DOCTOR_API_URL}/api/doctors/${id}/`);
     }
 }; 

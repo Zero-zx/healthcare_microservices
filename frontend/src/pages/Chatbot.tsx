@@ -27,222 +27,297 @@ interface Message {
 const API_URL = 'http://localhost:8008/api/chat/';
 const NOT_FOUND_SYMPTOM = 'Tôi chưa từng nghe triệu chứng đó, bạn còn gặp triệu chứng nào khác không?';
 
-function speak(text: string) {
-  const utter = new window.SpeechSynthesisUtterance(text);
-  utter.lang = 'vi-VN';
-  window.speechSynthesis.speak(utter);
+function speak(text: string): void {
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'vi-VN';
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    window.speechSynthesis.speak(utterance);
+  }
 }
 
-const Chatbot: React.FC = () => {
+function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
-  const [waiting, setWaiting] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const chatBodyRef = useRef<HTMLDivElement>(null);
-  const lastBotMsgRef = useRef<string | null>(null);
+  const [userInput, setUserInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Gửi hội thoại lên backend
-  const sendMessage = async (msg?: Message, questionText?: string, answer?: string) => {
-    let history = [...messages];
-    if (msg) {
-      history = [...messages, msg];
-    }
-    // Nếu là trả lời Có/Không, gửi thêm object có answer cho backend
-    if (questionText && answer) {
-      history = [...messages, { sender: 'user', text: questionText, answer }];
-    }
-    setWaiting(true);
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(scrollToBottom, [messages]);
+
+  const sendMessage = async (messageText: string = userInput, answer?: string) => {
+    if (!messageText.trim() && !answer) return;
+
+    // Tạo message để hiển thị
+    const userMessage: Message = {
+      sender: 'user',
+      text: answer ? (answer === 'có' ? 'Có' : 'Không') : messageText.trim(),
+      answer,
+    };
+
+    // Tạo message để gửi đến backend
+    const messageForBackend: Message = {
+      sender: 'user',
+      text: answer ? (messages.length > 0 ? messages[messages.length - 1].text : '') : messageText.trim(),
+      answer,
+    };
+
+    const newMessages = [...messages, userMessage];
+    const historyForBackend = [...messages, messageForBackend];
+    
+    setMessages(newMessages);
+    setUserInput('');
+    setIsLoading(true);
+
     try {
-      const res = await fetch(API_URL, {
+      const response = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ history }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          history: historyForBackend,
+        }),
       });
-      const data = await res.json();
-      setMessages([...history, { sender: 'bot', text: data.reply }]);
-      setWaiting(false);
-    } catch (e) {
-      setMessages([...history, { sender: 'bot', text: 'Lỗi kết nối server.' }]);
-      setWaiting(false);
-    }
-  };
 
-  // Xử lý gửi triệu chứng đầu tiên
-  const handleSend = () => {
-    if (!input.trim()) return;
-    if (
-      messages.length === 0 ||
-      (messages.length > 0 && messages[messages.length - 1].sender === 'bot' &&
-        (messages[messages.length - 1].text === 'Triệu chứng bạn gặp phải là gì?' ||
-         messages[messages.length - 1].text === NOT_FOUND_SYMPTOM))
-    ) {
-      sendMessage({ sender: 'user', text: input.trim() });
-      setInput('');
-      inputRef.current?.focus();
-    }
-  };
-
-  // Xử lý trả lời Có/Không cho các câu hỏi bot
-  const handleAnswer = (answer: string) => {
-    const lastBotMsg = messages[messages.length - 1];
-    if (!lastBotMsg || lastBotMsg.sender !== 'bot') return;
-    // Không hiển thị lại tin nhắn user, chỉ gửi cho backend
-    sendMessage(undefined, lastBotMsg.text, answer);
-  };
-
-  // Khi load lần đầu, tự động hỏi triệu chứng
-  useEffect(() => {
-    if (messages.length === 0) {
-      sendMessage({ sender: 'user', text: '' });
-    }
-    // eslint-disable-next-line
-  }, []);
-
-  // Tự động scroll xuống cuối khi có tin nhắn mới
-  useEffect(() => {
-    if (chatBodyRef.current) {
-      chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  // Phát âm thanh chỉ khi có tin nhắn bot mới thực sự (không phát lại khi F5)
-  useEffect(() => {
-    if (messages.length > 0) {
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg.sender === 'bot' && lastMsg.text !== lastBotMsgRef.current) {
-        speak(lastMsg.text);
-        lastBotMsgRef.current = lastMsg.text;
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      const botMessage: Message = {
+        sender: 'bot',
+        text: data.reply || data.audio || 'Xin lỗi, tôi không hiểu.',
+      };
+
+      setMessages(prev => [...prev, botMessage]);
+      
+      // Đọc tin nhắn của bot bằng giọng nói
+      if (data.audio) {
+        speak(data.audio);
+      }
+      
+    } catch (error) {
+      console.error('Error sending message:', error);
+      const errorMessage: Message = {
+        sender: 'bot',
+        text: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại.',
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
     }
-  }, [messages]);
-
-  // Kiểm tra có phải đang ở câu hỏi đầu tiên không
-  const isFirstBotQuestion =
-    messages.length > 0 &&
-    messages[messages.length - 1].sender === 'bot' &&
-    messages[messages.length - 1].text === 'Triệu chứng bạn gặp phải là gì?';
-
-  // Nếu bot trả về "Tôi chưa từng nghe triệu chứng đó..." thì cho nhập lại
-  const isNotFoundSymptom =
-    messages.length > 0 &&
-    messages[messages.length - 1].sender === 'bot' &&
-    messages[messages.length - 1].text === NOT_FOUND_SYMPTOM;
-
-  // Hàm reset hội thoại
-  const handleReset = () => {
-    setMessages([]);
-    setInput('');
-    setWaiting(false);
-    inputRef.current?.focus();
   };
 
-  // Khi messages rỗng (sau reset), tự động gửi lại câu hỏi đầu tiên
-  useEffect(() => {
-    if (messages.length === 0 && !waiting) {
-      sendMessage({ sender: 'user', text: '' });
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage();
+  };
+
+  const handleYesNo = (answer: 'có' | 'không') => {
+    if (messages.length === 0) return;
+    
+    const lastBotMessage = messages[messages.length - 1];
+    if (lastBotMessage.sender === 'bot') {
+      // Gửi chỉ answer, không gửi lại text của bot
+      sendMessage('', answer);
     }
-    // eslint-disable-next-line
-  }, [messages]);
+  };
+
+  const resetChat = () => {
+    setMessages([]);
+    setUserInput('');
+    window.speechSynthesis.cancel();
+  };
+
+  const shouldShowYesNoButtons = () => {
+    if (messages.length === 0) return false;
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage.sender !== 'bot') return false;
+    
+    const text = lastMessage.text;
+    // Hiển thị nút Có/Không cho câu hỏi triệu chứng và câu hỏi đặt lịch
+    return (text.includes('không?') && !text.includes('Vui lòng chọn số thứ tự')) ||
+           text.includes('đặt lịch hẹn khám không?');
+  };
+
+  const getInputPlaceholder = () => {
+    if (messages.length === 0) return 'Nhập triệu chứng của bạn...';
+    
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage.sender !== 'bot') return 'Nhập tin nhắn...';
+    
+    const text = lastMessage.text;
+    
+    // Đặt lịch hẹn - các bước khác nhau
+    if (text.includes('Vui lòng chọn số thứ tự')) {
+      return 'Nhập số thứ tự (ví dụ: 1, 2, 3...)';
+    } else if (text.includes('Định dạng: YYYY-MM-DD')) {
+      return 'Nhập ngày (ví dụ: 2024-06-01)';
+    } else if (text.includes('Định dạng: HH:MM')) {
+      return 'Nhập giờ (ví dụ: 14:30)';
+    } else if (text.includes('không?')) {
+      return 'Hoặc nhập tin nhắn khác...';
+    }
+    
+    return 'Nhập tin nhắn...';
+  };
+
+  const formatMessage = (text: string) => {
+    // Tách thông tin thành các dòng và format đẹp hơn
+    const lines = text.split('\n');
+    return lines.map((line, index) => (
+      <React.Fragment key={index}>
+        {line}
+        {index < lines.length - 1 && <br />}
+      </React.Fragment>
+    ));
+  };
 
   return (
-    <Box maxWidth={480} mx="auto" mt={6}>
-      <Paper elevation={6} sx={{ borderRadius: 2, overflow: 'hidden', boxShadow: 8, p: 0 }}>
-        <AppBar position="static" color="primary" elevation={0} sx={{ borderRadius: 0, background: 'linear-gradient(90deg, #1976d2 0%, #ff4081 100%)', boxShadow: 'none' }}>
-          <Toolbar variant="dense" sx={{ minHeight: 48 }}>
-            <SmartToyIcon sx={{ mr: 1 }} />
-            <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 600, fontSize: 18 }}>
-              Healthcare Chatbot
-            </Typography>
-            <IconButton color="inherit" onClick={handleReset} size="small">
-              <RestartAltIcon />
-            </IconButton>
-          </Toolbar>
-        </AppBar>
-        <Box ref={chatBodyRef} sx={{
-          minHeight: 320,
-          maxHeight: 400,
-          overflowY: 'auto',
-          background: 'linear-gradient(135deg, #e3f2fd 0%, #fce4ec 100%)',
-          px: 2, py: 2,
-          display: 'flex', flexDirection: 'column', gap: 1.5
-        }}>
-          {messages.map((msg, idx) => (
-            <Fade in key={idx} timeout={400}>
-              <Box display="flex" justifyContent={msg.sender === 'user' ? 'flex-end' : 'flex-start'} alignItems="flex-end">
-                {msg.sender === 'bot' && (
-                  <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32, mr: 1 }}>
-                    <SmartToyIcon fontSize="small" />
-                  </Avatar>
-                )}
-                <Box
-                  sx={{
-                    bgcolor: msg.sender === 'user' ? 'primary.light' : 'grey.100',
-                    color: 'text.primary',
-                    px: 2,
-                    py: 1,
-                    borderRadius: 3,
-                    maxWidth: 280,
-                    boxShadow: 1,
-                    fontSize: 16,
-                    wordBreak: 'break-word',
-                  }}
-                >
-                  {msg.text}
+    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <AppBar position="static" sx={{ bgcolor: '#2196f3' }}>
+        <Toolbar>
+          <SmartToyIcon sx={{ mr: 2 }} />
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            Trợ lý Y tế AI
+          </Typography>
+          <IconButton color="inherit" onClick={resetChat} title="Bắt đầu lại">
+            <RestartAltIcon />
+          </IconButton>
+        </Toolbar>
+      </AppBar>
+
+      <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ flex: 1, overflow: 'auto', p: 2, bgcolor: '#f5f5f5' }}>
+          {messages.length === 0 && (
+            <Paper sx={{ p: 3, mb: 2, textAlign: 'center', bgcolor: '#e3f2fd' }}>
+              <SmartToyIcon sx={{ fontSize: 48, color: '#2196f3', mb: 2 }} />
+              <Typography variant="h6" gutterBottom>
+                Chào bạn! Tôi là trợ lý y tế AI
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Hãy mô tả triệu chứng bạn đang gặp phải, tôi sẽ giúp bạn tham khảo về tình trạng sức khỏe và có thể hỗ trợ đặt lịch khám bệnh.
+              </Typography>
+            </Paper>
+          )}
+
+          {messages.map((message, index) => (
+            <Fade in={true} key={index}>
+              <Box sx={{ display: 'flex', mb: 2, justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start' }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', maxWidth: '80%' }}>
+                  {message.sender === 'bot' && (
+                    <Avatar sx={{ bgcolor: '#2196f3', mr: 1, mt: 1 }}>
+                      <SmartToyIcon />
+                    </Avatar>
+                  )}
+                  
+                  <Paper
+                    sx={{
+                      p: 2,
+                      bgcolor: message.sender === 'user' ? '#2196f3' : '#fff',
+                      color: message.sender === 'user' ? 'white' : 'black',
+                      borderRadius: 2,
+                      maxWidth: '100%',
+                      wordWrap: 'break-word',
+                      whiteSpace: 'pre-wrap'
+                    }}
+                  >
+                    <Typography variant="body1">
+                      {formatMessage(message.text)}
+                    </Typography>
+                  </Paper>
+
+                  {message.sender === 'user' && (
+                    <Avatar sx={{ bgcolor: '#4caf50', ml: 1, mt: 1 }}>
+                      <PersonIcon />
+                    </Avatar>
+                  )}
                 </Box>
-                {msg.sender === 'user' && (
-                  <Avatar sx={{ bgcolor: 'secondary.main', width: 32, height: 32, ml: 1 }}>
-                    <PersonIcon fontSize="small" />
-                  </Avatar>
-                )}
               </Box>
             </Fade>
           ))}
-          {waiting && (
-            <Box display="flex" justifyContent="center" alignItems="center" mt={1}>
-              <CircularProgress size={24} color="primary" />
+
+          {isLoading && (
+            <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Avatar sx={{ bgcolor: '#2196f3', mr: 1 }}>
+                  <SmartToyIcon />
+                </Avatar>
+                <Paper sx={{ p: 2, bgcolor: '#fff' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <CircularProgress size={20} sx={{ mr: 1 }} />
+                    <Typography variant="body1">Đang suy nghĩ...</Typography>
+                  </Box>
+                </Paper>
+              </Box>
             </Box>
           )}
+
+          <div ref={messagesEndRef} />
         </Box>
-        {/* Nếu bot vừa hỏi "Bạn có bị ... không?" thì hiện nút Có/Không */}
-        {messages.length > 0 && messages[messages.length - 1].sender === 'bot' && messages[messages.length - 1].text.startsWith('Bạn có bị') && (
-          <Stack direction="row" spacing={2} justifyContent="center" sx={{ p: 2 }}>
-            <Button variant="contained" color="success" size="large" onClick={() => handleAnswer('có')} disabled={waiting} sx={{ borderRadius: 3, minWidth: 100 }}>
-              Có
-            </Button>
-            <Button variant="contained" color="error" size="large" onClick={() => handleAnswer('không')} disabled={waiting} sx={{ borderRadius: 3, minWidth: 100 }}>
-              Không
-            </Button>
-          </Stack>
-        )}
-        {/* Chỉ hiển thị input nhập tự do ở câu hỏi đầu tiên hoặc khi không nhận diện được triệu chứng */}
-        {(isFirstBotQuestion || isNotFoundSymptom) && (
-          <Box sx={{ display: 'flex', gap: 1, p: 2, borderTop: '1px solid #eee', background: '#fff' }}>
-            <TextField
-              inputRef={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSend()}
-              placeholder="Nhập triệu chứng..."
-              disabled={waiting}
-              fullWidth
-              size="small"
-              sx={{ borderRadius: 3, bgcolor: 'grey.50' }}
-            />
-            <Button
-              variant="contained"
-              color="primary"
-              endIcon={<SendIcon />}
-              onClick={handleSend}
-              disabled={waiting || !input.trim()}
-              sx={{ borderRadius: 3, minWidth: 48 }}
-            >
-              Gửi
-            </Button>
-          </Box>
-        )}
-      </Paper>
+
+        <Paper sx={{ p: 2, borderRadius: 0 }} elevation={3}>
+          {shouldShowYesNoButtons() && (
+            <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+              <Button
+                variant="contained"
+                color="success"
+                onClick={() => handleYesNo('có')}
+                disabled={isLoading}
+                sx={{ flex: 1 }}
+              >
+                Có
+              </Button>
+              <Button
+                variant="contained"
+                color="error"
+                onClick={() => handleYesNo('không')}
+                disabled={isLoading}
+                sx={{ flex: 1 }}
+              >
+                Không
+              </Button>
+            </Stack>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <TextField
+                fullWidth
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                placeholder={getInputPlaceholder()}
+                disabled={isLoading}
+                variant="outlined"
+                size="small"
+                multiline
+                maxRows={3}
+              />
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={isLoading || (!userInput.trim())}
+                sx={{ minWidth: 'auto', px: 2 }}
+              >
+                <SendIcon />
+              </Button>
+            </Box>
+          </form>
+        </Paper>
+      </Box>
     </Box>
   );
-};
+}
 
 export default Chatbot; 

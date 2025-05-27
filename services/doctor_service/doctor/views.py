@@ -1,7 +1,7 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 import logging
@@ -80,6 +80,8 @@ class LoginView(generics.CreateAPIView):
 class DoctorListCreateView(generics.ListCreateAPIView):
     queryset = Doctor.objects.all()
     serializer_class = DoctorSerializer
+    authentication_classes = []
+    permission_classes = (AllowAny,)
 
     def create(self, request, *args, **kwargs):
         logger.info(f"Creating doctor with data: {json.dumps(request.data, indent=2)}")
