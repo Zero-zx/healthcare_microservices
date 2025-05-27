@@ -19,6 +19,8 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  FormHelperText,
+  Autocomplete,
 } from '@mui/material';
 import axios from 'axios';
 import { Appointment } from '../types/appointment';
@@ -60,7 +62,7 @@ interface AppointmentFormValues {
 const validationSchema = Yup.object({
   patient_id: Yup.string().required('Patient is required'),
   doctor_id: Yup.string().required('Doctor is required'),
-  date: Yup.date().required('Date is required'),
+  date: Yup.string().required('Date is required'),
   time: Yup.string().required('Time is required'),
   notes: Yup.string(),
   service_type: Yup.string().required('Service type is required'),
@@ -87,7 +89,7 @@ const Appointments: React.FC = () => {
         try {
           const patientsResponse = await axios.get('http://localhost:8004/api/patients/', { headers });
           console.log('Patients Response:', patientsResponse.data);
-          setPatients(patientsResponse.data);
+          setPatients(Array.isArray(patientsResponse.data) ? patientsResponse.data : patientsResponse.data.results || []);
         } catch (error) {
           console.error('Error fetching patients:', error);
         }
@@ -95,7 +97,7 @@ const Appointments: React.FC = () => {
         try {
           const doctorsResponse = await axios.get('http://localhost:8003/api/doctors/', { headers });
           console.log('Doctors Response:', doctorsResponse.data);
-          setDoctors(doctorsResponse.data);
+          setDoctors(Array.isArray(doctorsResponse.data) ? doctorsResponse.data : doctorsResponse.data.results || []);
         } catch (error) {
           console.error('Error fetching doctors:', error);
         }
@@ -128,9 +130,12 @@ const Appointments: React.FC = () => {
     },
     validationSchema,
     onSubmit: async (values: AppointmentFormValues) => {
+      console.log('Form submitted with values:', values);
       try {
         const token = localStorage.getItem('token');
-        console.log('Creating appointment with values:', values);
+        console.log('=== START SCHEDULE APPOINTMENT ===');
+        console.log('1. Form values before submit:', values);
+        console.log('2. Token:', token ? 'Token exists' : 'No token found');
         
         // Format the data according to the backend expectations
         const appointmentData = {
@@ -139,12 +144,13 @@ const Appointments: React.FC = () => {
           date: values.date,
           time: values.time,
           notes: values.notes || '',
-          status: 'pending', // Changed to match backend default
+          status: 'pending',
           service_type: values.service_type,
           duration: values.duration
         };
 
-        console.log('Sending appointment data:', appointmentData);
+        console.log('3. Prepared appointment data:', appointmentData);
+        console.log('4. Sending request to:', 'http://localhost:8005/api/appointments/');
 
         const response = await axios.post(
           'http://localhost:8005/api/appointments/',
@@ -157,41 +163,68 @@ const Appointments: React.FC = () => {
           }
         );
 
-        console.log('Appointment created successfully:', response.data);
+        console.log('5. Response received:', {
+          status: response.status,
+          statusText: response.statusText,
+          data: response.data
+        });
         
         // Refresh appointments list
         try {
+          console.log('6. Refreshing appointments list...');
           const appointmentsResponse = await axios.get('http://localhost:8005/api/appointments/', {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
           });
-          console.log('Refreshed appointments:', appointmentsResponse.data);
+          console.log('7. Appointments list refreshed:', {
+            count: appointmentsResponse.data.results?.length || 0,
+            data: appointmentsResponse.data
+          });
+          
           setAppointments(appointmentsResponse.data.results);
+          formik.resetForm();
+          
+          console.log('8. Form reset and state updated');
+          alert('Appointment scheduled successfully!');
         } catch (error) {
           console.error('Error refreshing appointments:', error);
+          alert('Appointment created but failed to refresh the list. Please refresh the page.');
         }
-
-        formik.resetForm();
       } catch (error: any) {
-        console.error('Error creating appointment:', error);
+        console.error('=== ERROR IN SCHEDULE APPOINTMENT ===');
         if (error.response) {
-          // The request was made and the server responded with a status code
-          // that falls out of the range of 2xx
-          console.error('Error response data:', error.response.data);
-          console.error('Error response status:', error.response.status);
-          console.error('Error response headers:', error.response.headers);
+          console.error('Server Error Response:', {
+            status: error.response.status,
+            data: error.response.data,
+            headers: error.response.headers
+          });
+          alert(`Error: ${error.response.data.detail || 'Failed to create appointment'}`);
         } else if (error.request) {
-          // The request was made but no response was received
-          console.error('Error request:', error.request);
+          console.error('Network Error:', {
+            request: error.request,
+            message: 'No response received from server'
+          });
+          alert('No response from server. Please check your connection.');
         } else {
-          // Something happened in setting up the request that triggered an Error
-          console.error('Error message:', error.message);
+          console.error('Request Setup Error:', {
+            message: error.message,
+            stack: error.stack
+          });
+          alert(`Error: ${error.message}`);
         }
+      } finally {
+        console.log('=== END SCHEDULE APPOINTMENT ===');
       }
     },
   });
+
+  // Add debug log for form values changes
+  useEffect(() => {
+    console.log('Formik values:', formik.values);
+    console.log('Formik errors:', formik.errors);
+  }, [formik.values, formik.errors]);
 
   return (
     <Container maxWidth="md">
@@ -199,56 +232,73 @@ const Appointments: React.FC = () => {
         <Typography variant="h4" component="h1" gutterBottom>
           Schedule Appointment
         </Typography>
+        <Typography variant="caption" sx={{ display: 'block', mb: 2 }}>
+          Debug: Patients loaded: {patients.length}, Doctors loaded: {doctors.length}
+        </Typography>
         <Paper sx={{ p: 3 }}>
-          <form onSubmit={formik.handleSubmit}>
+          <form 
+            onSubmit={(e) => {
+              console.log('Form submit event triggered');
+              e.preventDefault();
+              formik.handleSubmit(e);
+            }}
+          >
             <Grid container spacing={3}>
               <Grid item xs={12} sm={6}>
-                <FormControl fullWidth error={formik.touched.patient_id && Boolean(formik.errors.patient_id)}>
-                  <InputLabel id="patient_id-label">Patient</InputLabel>
-                  <Select
-                    labelId="patient_id-label"
-                    id="patient_id"
-                    name="patient_id"
-                    value={formik.values.patient_id}
-                    onChange={formik.handleChange}
-                    label="Patient"
-                  >
-                    {patients.map((patient) => (
-                      <MenuItem key={patient.user_id} value={patient.user_id}>
-                        {patient.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {formik.touched.patient_id && formik.errors.patient_id && (
-                    <Typography color="error" variant="caption">
-                      {formik.errors.patient_id}
-                    </Typography>
+                {formik.values.patient_id && (
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Selected Patient: {(() => {
+                      const selected = patients.find(p => p.user_id === formik.values.patient_id);
+                      return selected ? selected.name : '';
+                    })()}
+                  </Typography>
+                )}
+                <Autocomplete
+                  options={patients}
+                  getOptionLabel={(option) => option.name || ''}
+                  value={patients.find(p => p.user_id === formik.values.patient_id) || null}
+                  onChange={(event, newValue) => {
+                    formik.setFieldValue('patient_id', newValue ? newValue.user_id : '');
+                  }}
+                  isOptionEqualToValue={(option, value) => option.user_id === value?.user_id}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Patient"
+                      error={formik.touched.patient_id && Boolean(formik.errors.patient_id)}
+                      helperText={formik.touched.patient_id && formik.errors.patient_id}
+                      required
+                    />
                   )}
-                </FormControl>
+                />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <FormControl fullWidth error={formik.touched.doctor_id && Boolean(formik.errors.doctor_id)}>
-                  <InputLabel id="doctor_id-label">Doctor</InputLabel>
-                  <Select
-                    labelId="doctor_id-label"
-                    id="doctor_id"
-                    name="doctor_id"
-                    value={formik.values.doctor_id}
-                    onChange={formik.handleChange}
-                    label="Doctor"
-                  >
-                    {doctors.map((doctor) => (
-                      <MenuItem key={doctor.user_id} value={doctor.user_id}>
-                        {doctor.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {formik.touched.doctor_id && formik.errors.doctor_id && (
-                    <Typography color="error" variant="caption">
-                      {formik.errors.doctor_id}
-                    </Typography>
+                {formik.values.doctor_id && (
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Selected Doctor: {(() => {
+                      const selected = doctors.find(d => d.user_id === formik.values.doctor_id);
+                      return selected ? selected.name : '';
+                    })()}
+                  </Typography>
+                )}
+                <Autocomplete
+                  options={doctors}
+                  getOptionLabel={(option) => option.name || ''}
+                  value={doctors.find(d => d.user_id === formik.values.doctor_id) || null}
+                  onChange={(event, newValue) => {
+                    formik.setFieldValue('doctor_id', newValue ? newValue.user_id : '');
+                  }}
+                  isOptionEqualToValue={(option, value) => option.user_id === value?.user_id}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Doctor"
+                      error={formik.touched.doctor_id && Boolean(formik.errors.doctor_id)}
+                      helperText={formik.touched.doctor_id && formik.errors.doctor_id}
+                      required
+                    />
                   )}
-                </FormControl>
+                />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
@@ -326,8 +376,10 @@ const Appointments: React.FC = () => {
                   variant="contained"
                   fullWidth
                   type="submit"
+                  onClick={() => console.log('Submit button clicked')}
+                  disabled={!formik.isValid || formik.isSubmitting}
                 >
-                  Schedule Appointment
+                  {formik.isSubmitting ? 'Scheduling...' : 'Schedule Appointment'}
                 </Button>
               </Grid>
             </Grid>
