@@ -11,8 +11,8 @@ class Appointment(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    patient_id = models.UUIDField()  # References patient-service
-    doctor_id = models.UUIDField()   # References doctor-service
+    patient_id = models.CharField(max_length=100)  # Accept any string
+    doctor_id = models.CharField(max_length=100)   # Accept any string
     date = models.DateField()
     time = models.TimeField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')

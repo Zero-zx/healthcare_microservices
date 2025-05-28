@@ -1,397 +1,213 @@
 import React, { useEffect, useState } from 'react';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import {
-  Box,
-  Container,
-  Typography,
-  TextField,
-  Button,
-  Grid,
-  Paper,
-  Select,
-  MenuItem,
-  InputLabel,
-  FormControl,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  FormHelperText,
-  Autocomplete,
-} from '@mui/material';
+import { Box, Container, Typography, TextField, Button, Grid, Paper, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, SelectChangeEvent } from '@mui/material';
 import axios from 'axios';
-import { Appointment } from '../types/appointment';
 
-// Define Patient and Doctor types (adjust if necessary)
 interface Patient {
-  user_id: string;  // Changed from id to user_id to match backend
+  user_id: string;
+  user?: string;
   name: string;
-  age: number;
-  gender: string;
-  phone: string;
-  email: string;
-  address: string;
-  medical_history?: string;
-  created_at: string;
-  updated_at: string;
 }
 
 interface Doctor {
-  user_id: string;  // Changed from id to user_id to match backend
+  user_id: string;
+  user?: string;
   name: string;
-  specialty: string;
-  license: string;
-  phone: string;
-  email: string;
 }
 
-// Adjusting form values to match backend snake_case expectations
-interface AppointmentFormValues {
+interface Appointment {
+  id: string;
   patient_id: string;
   doctor_id: string;
   date: string;
   time: string;
-  notes?: string;
   service_type: string;
   duration: number;
+  status: string;
 }
-
-const validationSchema = Yup.object({
-  patient_id: Yup.string().required('Patient is required'),
-  doctor_id: Yup.string().required('Doctor is required'),
-  date: Yup.string().required('Date is required'),
-  time: Yup.string().required('Time is required'),
-  notes: Yup.string(),
-  service_type: Yup.string().required('Service type is required'),
-  duration: Yup.number()
-    .min(15, 'Duration must be at least 15 minutes')
-    .max(240, 'Duration cannot exceed 240 minutes')
-    .required('Duration is required'),
-});
 
 const Appointments: React.FC = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [form, setForm] = useState({
+    patient_id: '',
+    doctor_id: '',
+    date: '',
+    time: '',
+    service_type: '',
+    duration: 30,
+  });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const headers = { Authorization: `Bearer ${token}` };
-
-        console.log('Fetching data with headers:', headers);
-
-        // Try fetching each service separately to identify which one is failing
-        try {
-          const patientsResponse = await axios.get('http://localhost:8004/api/patients/', { headers });
-          console.log('Patients Response:', patientsResponse.data);
-          setPatients(Array.isArray(patientsResponse.data) ? patientsResponse.data : patientsResponse.data.results || []);
-        } catch (error) {
-          console.error('Error fetching patients:', error);
-        }
-
-        try {
-          const doctorsResponse = await axios.get('http://localhost:8003/api/doctors/', { headers });
-          console.log('Doctors Response:', doctorsResponse.data);
-          setDoctors(Array.isArray(doctorsResponse.data) ? doctorsResponse.data : doctorsResponse.data.results || []);
-        } catch (error) {
-          console.error('Error fetching doctors:', error);
-        }
-
-        try {
-          const appointmentsResponse = await axios.get('http://localhost:8005/api/appointments/', { headers });
-          console.log('Appointments Response:', appointmentsResponse.data);
-          setAppointments(appointmentsResponse.data.results);
-        } catch (error) {
-          console.error('Error fetching appointments:', error);
-        }
-
-      } catch (error) {
-        console.error('Error in fetchData:', error);
+        const [patientsRes, doctorsRes, appointmentsRes] = await Promise.all([
+          axios.get('http://localhost:8004/api/patients/'),
+          axios.get('http://localhost:8003/api/doctors/'),
+          axios.get('http://localhost:8005/api/appointments/'),
+        ]);
+        // Map user to string if needed
+        const mappedPatients = (Array.isArray(patientsRes.data) ? patientsRes.data : patientsRes.data.results || []).map((p: any) => ({
+          ...p,
+          user: typeof p.user === 'object' && p.user !== null ? p.user.id : p.user,
+        }));
+        const mappedDoctors = (Array.isArray(doctorsRes.data) ? doctorsRes.data : doctorsRes.data.results || []).map((d: any) => ({
+          ...d,
+          user: typeof d.user === 'object' && d.user !== null ? d.user.id : d.user,
+        }));
+        setPatients(mappedPatients);
+        setDoctors(mappedDoctors);
+        setAppointments(appointmentsRes.data.results || []);
+        console.log('Fetched patients:', mappedPatients);
+        console.log('Fetched doctors:', mappedDoctors);
+        console.log('Fetched appointments:', appointmentsRes.data);
+      } catch (err) {
+        console.error('Error fetching data:', err);
       }
     };
-
     fetchData();
   }, []);
 
-  const formik = useFormik<AppointmentFormValues>({
-    initialValues: {
-      patient_id: '',
-      doctor_id: '',
-      date: '',
-      time: '',
-      notes: '',
-      service_type: 'general',
-      duration: 30,
-    },
-    validationSchema,
-    onSubmit: async (values: AppointmentFormValues) => {
-      console.log('Form submitted with values:', values);
-      try {
-        const token = localStorage.getItem('token');
-        console.log('=== START SCHEDULE APPOINTMENT ===');
-        console.log('1. Form values before submit:', values);
-        console.log('2. Token:', token ? 'Token exists' : 'No token found');
-        
-        // Format the data according to the backend expectations
-        const appointmentData = {
-          patient_id: values.patient_id,
-          doctor_id: values.doctor_id,
-          date: values.date,
-          time: values.time,
-          notes: values.notes || '',
-          status: 'pending',
-          service_type: values.service_type,
-          duration: values.duration
-        };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name as string]: value }));
+  };
 
-        console.log('3. Prepared appointment data:', appointmentData);
-        console.log('4. Sending request to:', 'http://localhost:8005/api/appointments/');
+  const handleSelectChange = (e: SelectChangeEvent<string>) => {
+    const { name, value } = e.target;
+    console.log('Dropdown changed:', name, value);
+    setForm(prev => ({ ...prev, [name as string]: value }));
+  };
 
-        const response = await axios.post(
-          'http://localhost:8005/api/appointments/',
-          appointmentData,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-
-        console.log('5. Response received:', {
-          status: response.status,
-          statusText: response.statusText,
-          data: response.data
-        });
-        
-        // Refresh appointments list
-        try {
-          console.log('6. Refreshing appointments list...');
-          const appointmentsResponse = await axios.get('http://localhost:8005/api/appointments/', {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          });
-          console.log('7. Appointments list refreshed:', {
-            count: appointmentsResponse.data.results?.length || 0,
-            data: appointmentsResponse.data
-          });
-          
-          setAppointments(appointmentsResponse.data.results);
-          formik.resetForm();
-          
-          console.log('8. Form reset and state updated');
-          alert('Appointment scheduled successfully!');
-        } catch (error) {
-          console.error('Error refreshing appointments:', error);
-          alert('Appointment created but failed to refresh the list. Please refresh the page.');
-        }
-      } catch (error: any) {
-        console.error('=== ERROR IN SCHEDULE APPOINTMENT ===');
-        if (error.response) {
-          console.error('Server Error Response:', {
-            status: error.response.status,
-            data: error.response.data,
-            headers: error.response.headers
-          });
-          alert(`Error: ${error.response.data.detail || 'Failed to create appointment'}`);
-        } else if (error.request) {
-          console.error('Network Error:', {
-            request: error.request,
-            message: 'No response received from server'
-          });
-          alert('No response from server. Please check your connection.');
-        } else {
-          console.error('Request Setup Error:', {
-            message: error.message,
-            stack: error.stack
-          });
-          alert(`Error: ${error.message}`);
-        }
-      } finally {
-        console.log('=== END SCHEDULE APPOINTMENT ===');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // Defensive: ensure time is in HH:MM:SS
+    const timeValue = form.time.length === 5 ? form.time + ':00' : form.time;
+    const payload = {
+      ...form,
+      patient_id: String(form.patient_id),
+      doctor_id: String(form.doctor_id),
+      time: timeValue,
+      status: 'pending',
+    };
+    console.log('typeof patient_id:', typeof payload.patient_id, 'value:', payload.patient_id);
+    console.log('Submitting appointment payload:', payload);
+    // Log types and values
+    Object.entries(payload).forEach(([k, v]) => {
+      console.log(`${k}:`, v, 'type:', typeof v);
+    });
+    // Check for empty required fields
+    if (!payload.patient_id || !payload.doctor_id || !payload.date || !payload.time || !payload.service_type || !payload.duration) {
+      alert('All fields are required!');
+      return;
+    }
+    try {
+      const response = await axios.post('http://localhost:8005/api/appointments/', payload);
+      console.log('POST response:', response.data);
+      const appointmentsRes = await axios.get('http://localhost:8005/api/appointments/');
+      setAppointments(appointmentsRes.data.results || []);
+      setForm({ patient_id: '', doctor_id: '', date: '', time: '', service_type: '', duration: 30 });
+      alert('Appointment scheduled!');
+    } catch (err: any) {
+      if (err.response) {
+        console.error('Backend error:', err.response.data);
+        alert('Backend error: ' + JSON.stringify(err.response.data));
+      } else {
+        console.error('Error scheduling appointment:', err);
+        alert('Error scheduling appointment. See console for details.');
       }
-    },
-  });
-
-  // Add debug log for form values changes
-  useEffect(() => {
-    console.log('Formik values:', formik.values);
-    console.log('Formik errors:', formik.errors);
-  }, [formik.values, formik.errors]);
+    }
+  };
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="sm">
       <Box sx={{ mt: 4, mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Schedule Appointment
-        </Typography>
-        <Typography variant="caption" sx={{ display: 'block', mb: 2 }}>
-          Debug: Patients loaded: {patients.length}, Doctors loaded: {doctors.length}
-        </Typography>
-        <Paper sx={{ p: 3 }}>
-          <form 
-            onSubmit={(e) => {
-              console.log('Form submit event triggered');
-              e.preventDefault();
-              formik.handleSubmit(e);
-            }}
-          >
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
-                {formik.values.patient_id && (
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                    Selected Patient: {(() => {
-                      const selected = patients.find(p => p.user_id === formik.values.patient_id);
-                      return selected ? selected.name : '';
-                    })()}
-                  </Typography>
-                )}
-                <Autocomplete
-                  options={patients}
-                  getOptionLabel={(option) => option.name || ''}
-                  value={patients.find(p => p.user_id === formik.values.patient_id) || null}
-                  onChange={(event, newValue) => {
-                    formik.setFieldValue('patient_id', newValue ? newValue.user_id : '');
-                  }}
-                  isOptionEqualToValue={(option, value) => option.user_id === value?.user_id}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Patient"
-                      error={formik.touched.patient_id && Boolean(formik.errors.patient_id)}
-                      helperText={formik.touched.patient_id && formik.errors.patient_id}
-                      required
-                    />
-                  )}
-                />
+        <Typography variant="h5" gutterBottom>Schedule Appointment</Typography>
+        <Paper sx={{ p: 2 }}>
+          <form onSubmit={handleSubmit}>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Select
+                  fullWidth
+                  name="patient_id"
+                  value={form.patient_id}
+                  onChange={handleSelectChange}
+                  displayEmpty
+                >
+                  <MenuItem value=""><em>Select Patient</em></MenuItem>
+                  {patients.map(p => (
+                    <MenuItem key={p.user} value={String(p.user)}>{p.name}</MenuItem>
+                  ))}
+                </Select>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                {formik.values.doctor_id && (
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                    Selected Doctor: {(() => {
-                      const selected = doctors.find(d => d.user_id === formik.values.doctor_id);
-                      return selected ? selected.name : '';
-                    })()}
-                  </Typography>
-                )}
-                <Autocomplete
-                  options={doctors}
-                  getOptionLabel={(option) => option.name || ''}
-                  value={doctors.find(d => d.user_id === formik.values.doctor_id) || null}
-                  onChange={(event, newValue) => {
-                    formik.setFieldValue('doctor_id', newValue ? newValue.user_id : '');
-                  }}
-                  isOptionEqualToValue={(option, value) => option.user_id === value?.user_id}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Doctor"
-                      error={formik.touched.doctor_id && Boolean(formik.errors.doctor_id)}
-                      helperText={formik.touched.doctor_id && formik.errors.doctor_id}
-                      required
-                    />
-                  )}
-                />
+              <Grid item xs={12}>
+                <Select
+                  fullWidth
+                  name="doctor_id"
+                  value={form.doctor_id}
+                  onChange={handleSelectChange}
+                  displayEmpty
+                >
+                  <MenuItem value=""><em>Select Doctor</em></MenuItem>
+                  {doctors.map(d => (
+                    <MenuItem key={d.user} value={String(d.user)}>{d.name}</MenuItem>
+                  ))}
+                </Select>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  id="date"
                   name="date"
                   label="Date"
                   type="date"
-                  value={formik.values.date}
-                  onChange={formik.handleChange}
-                  error={formik.touched.date && Boolean(formik.errors.date)}
-                  helperText={formik.touched.date && formik.errors.date}
+                  value={form.date}
+                  onChange={handleChange}
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  id="time"
                   name="time"
                   label="Time"
                   type="time"
-                  value={formik.values.time}
-                  onChange={formik.handleChange}
-                  error={formik.touched.time && Boolean(formik.errors.time)}
-                  helperText={formik.touched.time && formik.errors.time}
+                  value={form.time}
+                  onChange={handleChange}
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  id="notes"
-                  name="notes"
-                  label="Notes"
-                  multiline
-                  rows={4}
-                  value={formik.values.notes}
-                  onChange={formik.handleChange}
-                  error={formik.touched.notes && Boolean(formik.errors.notes)}
-                  helperText={formik.touched.notes && formik.errors.notes}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  id="service_type"
                   name="service_type"
                   label="Service Type"
-                  value={formik.values.service_type}
-                  onChange={formik.handleChange}
-                  error={formik.touched.service_type && Boolean(formik.errors.service_type)}
-                  helperText={formik.touched.service_type && formik.errors.service_type}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  id="duration"
-                  name="duration"
-                  label="Duration (minutes)"
-                  type="number"
-                  value={formik.values.duration}
-                  onChange={formik.handleChange}
-                  error={formik.touched.duration && Boolean(formik.errors.duration)}
-                  helperText={formik.touched.duration && formik.errors.duration}
-                  InputProps={{
-                    inputProps: { min: 15, max: 240 }
-                  }}
+                  value={form.service_type}
+                  onChange={handleChange}
                 />
               </Grid>
               <Grid item xs={12}>
-                <Button
-                  color="primary"
-                  variant="contained"
+                <TextField
                   fullWidth
-                  type="submit"
-                  onClick={() => console.log('Submit button clicked')}
-                  disabled={!formik.isValid || formik.isSubmitting}
-                >
-                  {formik.isSubmitting ? 'Scheduling...' : 'Schedule Appointment'}
+                  name="duration"
+                  label="Duration (minutes)"
+                  type="number"
+                  value={form.duration}
+                  onChange={handleChange}
+                  inputProps={{ min: 15, max: 240 }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Button type="submit" variant="contained" color="primary" fullWidth>
+                  Schedule Appointment
                 </Button>
               </Grid>
             </Grid>
           </form>
         </Paper>
       </Box>
-
       <Box sx={{ mt: 4, mb: 4 }}>
-        <Typography variant="h5" component="h2" gutterBottom>
-          Appointment History
-        </Typography>
-        <Paper sx={{ p: 3 }}>
+        <Typography variant="h6" gutterBottom>Appointments</Typography>
+        <Paper sx={{ p: 2 }}>
           <TableContainer>
             <Table>
               <TableHead>
@@ -402,29 +218,21 @@ const Appointments: React.FC = () => {
                   <TableCell>Time</TableCell>
                   <TableCell>Service</TableCell>
                   <TableCell>Duration</TableCell>
+                  <TableCell>Status</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {Array.isArray(appointments) ? (
-                  appointments.map((appointment) => {
-                    const patient = patients.find(p => p.user_id === appointment.patient_id);
-                    const doctor = doctors.find(d => d.user_id === appointment.doctor_id);
-                    return (
-                      <TableRow key={appointment.id}>
-                        <TableCell>{patient?.name || 'Unknown Patient'}</TableCell>
-                        <TableCell>{doctor?.name || 'Unknown Doctor'}</TableCell>
-                        <TableCell>{appointment.date}</TableCell>
-                        <TableCell>{appointment.time}</TableCell>
-                        <TableCell>{appointment.service_type}</TableCell>
-                        <TableCell>{appointment.duration} min</TableCell>
-                      </TableRow>
-                    );
-                  })
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={6}>No appointments found or data error.</TableCell>
+                {appointments.map(app => (
+                  <TableRow key={app.id}>
+                    <TableCell>{patients.find(p => p.user === app.patient_id)?.name || app.patient_id}</TableCell>
+                    <TableCell>{doctors.find(d => d.user === app.doctor_id)?.name || app.doctor_id}</TableCell>
+                    <TableCell>{app.date}</TableCell>
+                    <TableCell>{app.time}</TableCell>
+                    <TableCell>{app.service_type}</TableCell>
+                    <TableCell>{app.duration}</TableCell>
+                    <TableCell>{app.status}</TableCell>
                   </TableRow>
-                )}
+                ))}
               </TableBody>
             </Table>
           </TableContainer>
