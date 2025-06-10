@@ -156,20 +156,15 @@ services:
   chatbot_service:
     build: ./services/chatbot_service
     container_name: chatbot_service
-    command: bash -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
+    command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./services/chatbot_service:/app
     ports:
       - "8006:8000"
-    environment:
-      - DATABASE_HOST=mysql_db
-      - DATABASE_PORT=3306
-      - DATABASE_NAME=chatbot_db
-      - DATABASE_USER=user
-      - DATABASE_PASSWORD=123456
     depends_on:
-      mysql_db:
-        condition: service_healthy
+      - doctor_service
+      - patient-service
+      - appointment_service
 
 volumes:
   mysql_data:
