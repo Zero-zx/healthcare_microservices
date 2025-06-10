@@ -30,7 +30,7 @@ const Login: React.FC = () => {
     validationSchema,
     onSubmit: async (values) => {
       try {
-        const response = await axios.post('http://localhost:8001/api/auth/login', values);
+        const response = await axios.post('http://localhost:8004/api/patients/login/', values);
         if (response.data.token) {
           localStorage.setItem('token', response.data.token);
           navigate('/');

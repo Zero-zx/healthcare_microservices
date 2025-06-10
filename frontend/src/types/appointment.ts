@@ -4,10 +4,20 @@ export interface Appointment {
   doctor_id: string;
   date: string;
   time: string;
-  status: 'scheduled' | 'completed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   notes?: string;
   service_type: string;
   duration: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// Django REST Framework pagination response
+export interface AppointmentListResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Appointment[];
 }
 
 export interface AppointmentResponse {

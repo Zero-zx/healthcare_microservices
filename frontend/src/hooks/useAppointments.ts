@@ -12,7 +12,7 @@ import {
   setError,
 } from '../store/slices/appointmentSlice';
 import axios from 'axios';
-import { Appointment, AppointmentResponse } from '../types/appointment';
+import { Appointment, AppointmentListResponse } from '../types/appointment';
 
 interface AppointmentState {
   appointments: Appointment[];
@@ -31,39 +31,42 @@ export const useAppointments = () => {
     try {
       dispatch(setLoading(true));
       const token = localStorage.getItem('token');
-      const response = await axios.get<AppointmentResponse>('http://localhost:8000/api/appointments', {
+      const response = await axios.get<AppointmentListResponse>('http://localhost:8005/api/appointments/', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      if (response.data.status === 200) {
-        dispatch(setAppointments(response.data.data as Appointment[]));
-      }
+      // Handle Django REST Framework pagination response
+      dispatch(setAppointments(response.data.results || []));
     } catch (error) {
+      console.error('Error fetching appointments:', error);
       dispatch(setError('Failed to fetch appointments'));
     } finally {
       dispatch(setLoading(false));
     }
   }, [dispatch]);
 
-  const createAppointment = useCallback(async (appointment: Omit<Appointment, 'id'>) => {
+  const createAppointment = useCallback(async (appointment: Omit<Appointment, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       dispatch(setLoading(true));
       const token = localStorage.getItem('token');
-      const response = await axios.post<AppointmentResponse>(
-        'http://localhost:8000/api/appointments',
+      const response = await axios.post<Appointment>(
+        'http://localhost:8005/api/appointments/',
         appointment,
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
           },
         }
       );
-      if (response.data.status === 201) {
-        dispatch(addAppointment(response.data.data as Appointment));
-      }
+      // Django REST Framework returns the created object directly
+      dispatch(addAppointment(response.data));
+      return response.data;
     } catch (error) {
+      console.error('Error creating appointment:', error);
       dispatch(setError('Failed to create appointment'));
+      throw error;
     } finally {
       dispatch(setLoading(false));
     }
@@ -73,20 +76,22 @@ export const useAppointments = () => {
     try {
       dispatch(setLoading(true));
       const token = localStorage.getItem('token');
-      const response = await axios.put<AppointmentResponse>(
-        `http://localhost:8000/api/appointments/${id}`,
+      const response = await axios.put<Appointment>(
+        `http://localhost:8005/api/appointments/${id}/`,
         appointment,
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
           },
         }
       );
-      if (response.data.status === 200) {
-        dispatch(updateAppointment(response.data.data as Appointment));
-      }
+      dispatch(updateAppointment(response.data));
+      return response.data;
     } catch (error) {
+      console.error('Error updating appointment:', error);
       dispatch(setError('Failed to update appointment'));
+      throw error;
     } finally {
       dispatch(setLoading(false));
     }
@@ -96,23 +101,98 @@ export const useAppointments = () => {
     try {
       dispatch(setLoading(true));
       const token = localStorage.getItem('token');
-      const response = await axios.delete<AppointmentResponse>(
-        `http://localhost:8000/api/appointments/${id}`,
+      await axios.delete(
+        `http://localhost:8005/api/appointments/${id}/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      if (response.data.status === 200) {
-        dispatch(deleteAppointment(id));
-      }
+      dispatch(deleteAppointment(id));
     } catch (error) {
+      console.error('Error deleting appointment:', error);
       dispatch(setError('Failed to delete appointment'));
+      throw error;
     } finally {
       dispatch(setLoading(false));
     }
   }, [dispatch]);
+
+  const confirmAppointment = useCallback(async (id: string) => {
+    try {
+      dispatch(setLoading(true));
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `http://localhost:8005/api/appointments/${id}/confirm/`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      // Refresh appointments after confirmation
+      await fetchAppointments();
+      return response.data;
+    } catch (error) {
+      console.error('Error confirming appointment:', error);
+      dispatch(setError('Failed to confirm appointment'));
+      throw error;
+    } finally {
+      dispatch(setLoading(false));
+    }
+  }, [dispatch, fetchAppointments]);
+
+  const cancelAppointment = useCallback(async (id: string) => {
+    try {
+      dispatch(setLoading(true));
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `http://localhost:8005/api/appointments/${id}/cancel/`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      // Refresh appointments after cancellation
+      await fetchAppointments();
+      return response.data;
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
+      dispatch(setError('Failed to cancel appointment'));
+      throw error;
+    } finally {
+      dispatch(setLoading(false));
+    }
+  }, [dispatch, fetchAppointments]);
+
+  const completeAppointment = useCallback(async (id: string) => {
+    try {
+      dispatch(setLoading(true));
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `http://localhost:8005/api/appointments/${id}/complete/`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      // Refresh appointments after completion
+      await fetchAppointments();
+      return response.data;
+    } catch (error) {
+      console.error('Error completing appointment:', error);
+      dispatch(setError('Failed to complete appointment'));
+      throw error;
+    } finally {
+      dispatch(setLoading(false));
+    }
+  }, [dispatch, fetchAppointments]);
 
   return {
     appointments,
@@ -122,5 +202,8 @@ export const useAppointments = () => {
     createAppointment,
     updateAppointment: updateAppointmentById,
     deleteAppointment: deleteAppointmentById,
+    confirmAppointment,
+    cancelAppointment,
+    completeAppointment,
   };
 }; 
