@@ -8,7 +8,6 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: user_db
-      
       MYSQL_USER: user
       MYSQL_PASSWORD: 123456
       MYSQL_ALLOW_EMPTY_PASSWORD: "no"
@@ -39,55 +38,58 @@ services:
       retries: 5
       start_period: 30s
 
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
+  postgres_db:
+    image: postgres:13
+    container_name: postgres_db
+    restart: unless-stopped
     environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
+      POSTGRES_DB: user_service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
       retries: 5
 
-  notification_service:
-    build: ./services/notification_service
-    container_name: notification_service
+  # Core Services
+  gateway:
+    build: ./gateway
+    container_name: gateway
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./gateway/src:/etc/nginx/conf.d
+    depends_on:
+      - user_service
+      - doctor_service
+      - patient-service
+      - appointment_service
+      - chatbot_service
+
+  user_service:
+    build: ./services/user_service
+    container_name: user_service
     command: bash -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
     volumes:
-      - ./services/notification_service:/app
+      - ./services/user_service:/app
     ports:
-      - "8006:8000"
+      - "8001:8000"
     environment:
-      - EMAIL_HOST=smtp.gmail.com
-      - EMAIL_PORT=587
-      - EMAIL_HOST_USER=dthieu2512@gmail.com
-      - EMAIL_HOST_PASSWORD=gsic ghfo ceex guci
+      - POSTGRES_DB=user_service
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST=postgres_db
+      - POSTGRES_PORT=5432
     depends_on:
-      - mysql_db
-
-  admin_service:
-    build: ./services/admin_service
-    container_name: admin_service
-    command: bash -c "python3 manage.py migrate --noinput && python3 manage.py collectstatic --noinput && python manage.py runserver 0.0.0.0:8000"
-    volumes:
-      - ./services/admin_service:/app
-    ports:
-      - "8002:8000"
-    environment:
-      - DATABASE_HOST=mysql_db
-      - DATABASE_PORT=3306
-      - DATABASE_NAME=admin_db
-      - DATABASE_USER=user
-      - DATABASE_PASSWORD=123456
-    depends_on:
-      mysql_db:
+      postgres_db:
         condition: service_healthy
 
+  # Main Healthcare Services
   doctor_service:
     build: ./services/doctor_service
     container_name: doctor_service
@@ -95,7 +97,7 @@ services:
     volumes:
       - ./services/doctor_service:/app
     ports:
-      - "8003:8000"
+      - "8002:8000"
     environment:
       - DATABASE_HOST=mysql_db
       - DATABASE_PORT=3306
@@ -106,14 +108,14 @@ services:
       mysql_db:
         condition: service_healthy
 
-  patient_service:
+  patient-service:
     build: ./services/patient_service
-    container_name: patient_service
+    container_name: patient-service
     command: bash -c "python3 manage.py migrate --noinput && python3 manage.py collectstatic --noinput && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - ./services/patient_service:/app
     ports:
-      - "8004:8000"
+      - "8003:8000"
     environment:
       - DATABASE_HOST=mysql_db
       - DATABASE_PORT=3306
@@ -131,7 +133,7 @@ services:
     volumes:
       - ./services/appointment_service:/app
     ports:
-      - "8005:8000"
+      - "8004:8000"
     environment:
       - MONGODB_HOST=mongodb
       - MONGODB_PORT=27017
@@ -146,7 +148,7 @@ services:
     volumes:
       - ./services/laboratory_service:/app
     ports:
-      - "8007:8000"
+      - "8005:8000"
     depends_on:
       - mysql_db
       - mongodb
@@ -158,7 +160,7 @@ services:
     volumes:
       - ./services/chatbot_service:/app
     ports:
-      - "8008:8000"
+      - "8006:8000"
     environment:
       - DATABASE_HOST=mysql_db
       - DATABASE_PORT=3306
@@ -169,20 +171,7 @@ services:
       mysql_db:
         condition: service_healthy
 
-  gateway:
-    build: ./gateway
-    container_name: gateway
-    ports:
-      - "80:80"
-    volumes:
-      - ./gateway/src:/etc/nginx/conf.d
-    depends_on:
-      - admin_service
-      - doctor_service
-      - patient_service
-      - appointment_service
-      - chatbot_service
-
 volumes:
   mysql_data:
   mongodb_data:
+  postgres_data:

@@ -5,8 +5,9 @@ from datetime import timedelta
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'your-secret-key'
+# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*', 'doctor_service', 'doctor_service:8000', 'localhost', '127.0.0.1']
 
 # Custom user model
 AUTH_USER_MODEL = 'doctor.User'
@@ -37,7 +38,10 @@ MIDDLEWARE = [
 ]
 
 # CORS settings
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # Replace with your frontend URL
+]
+
 CORS_ALLOW_CREDENTIALS = True
 
 # Logging configuration
@@ -92,7 +96,7 @@ WSGI_APPLICATION = 'doctor_service.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'user_db',
+        'NAME': 'doctor_db',
         'USER': 'user',
         'PASSWORD': '123456',
         'HOST': 'mysql_db',
@@ -125,9 +129,13 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# User Service URL
+USER_SERVICE_URL = 'http://user_service:8000'
+
+# REST Framework settings
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.AllowAny',
     ),
 }
 

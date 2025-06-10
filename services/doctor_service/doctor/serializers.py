@@ -1,69 +1,69 @@
 from rest_framework import serializers
-from django.core.validators import EmailValidator, MinLengthValidator
-from django.contrib.auth import get_user_model
+from .models import Doctor, Schedule, User
 from django.contrib.auth.password_validation import validate_password
-
-from .models import Doctor, Schedule
-
-User = get_user_model()
-
-class DoctorSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Doctor
-        fields = '__all__'
-        read_only_fields = ('user_id',)
-        extra_kwargs = {
-            'name': {'required': True, 'min_length': 1},
-            'specialty': {'required': True, 'min_length': 1},
-            'license': {'required': True, 'min_length': 1},
-            'phone': {'required': True, 'min_length': 1},
-            'email': {'required': True, 'validators': [EmailValidator()]},
-        }
-
-    def validate_phone(self, value):
-        if not value.replace('+', '').replace('-', '').replace(' ', '').isdigit():
-            raise serializers.ValidationError("Phone number must contain only digits, spaces, hyphens, and plus sign")
-        return value
 
 class ScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Schedule
-        fields = '__all__'
+        fields = ('id', 'day_of_week', 'start_time', 'end_time', 'is_available', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+class DoctorSerializer(serializers.ModelSerializer):
+    schedules = ScheduleSerializer(many=True, read_only=True)
+    languages = serializers.CharField(required=True)
+    email = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Doctor
+        fields = ('id', 'user_id', 'name', 'email', 'specialization', 'license_number', 'years_of_experience',
+                 'education', 'certifications', 'languages', 'schedules', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'user_id', 'email', 'created_at', 'updated_at')
+        extra_kwargs = {
+            'specialization': {'required': True},
+            'license_number': {'required': True},
+            'years_of_experience': {'required': True, 'min_value': 0},
+            'education': {'required': True},
+            'languages': {'required': True}
+        }
+
+    def get_email(self, obj):
+        try:
+            user = User.objects.get(id=obj.user_id)
+            return user.email
+        except User.DoesNotExist:
+            return None
+
+    def validate_languages(self, value):
+        if isinstance(value, list):
+            return ', '.join(value)
+        return value
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
-    password2 = serializers.CharField(write_only=True, required=True)
-    role = serializers.ChoiceField(choices=[('patient', 'Patient'), ('doctor', 'Doctor')], required=True)
-    username = serializers.CharField(required=True, min_length=3)
+    password = serializers.CharField(write_only=True)
+    specialization = serializers.CharField(required=True)
+    license_number = serializers.CharField(required=True)
+    years_of_experience = serializers.IntegerField(required=True)
+    education = serializers.CharField(required=True)
+    languages = serializers.CharField(required=True)
 
     class Meta:
         model = User
-        fields = ('email', 'username', 'password', 'password2', 'role')
-
-    def validate(self, attrs):
-        if attrs['password'] != attrs['password2']:
-            raise serializers.ValidationError({"password": "Password fields didn't match."})
-        if attrs['role'] != 'doctor':
-            raise serializers.ValidationError({"role": "Only doctor registration is allowed in this service."})
-        return attrs
+        fields = ('email', 'password', 'username', 'role', 'specialization', 
+                 'license_number', 'years_of_experience', 'education', 'languages')
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'role': {'default': 'doctor'}
+        }
 
     def create(self, validated_data):
-        password2 = validated_data.pop('password2')
-        role = validated_data.pop('role')
         user = User.objects.create_user(
             email=validated_data['email'],
             username=validated_data['username'],
             password=validated_data['password'],
-            role=role
+            role='doctor'
         )
         return user
 
 class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField(required=True)
-    password = serializers.CharField(required=True, write_only=True)
-    role = serializers.ChoiceField(choices=['patient', 'doctor'], required=True)
-
-    def validate(self, attrs):
-        if attrs['role'] != 'doctor':
-            raise serializers.ValidationError({"role": "Only doctor login is allowed in this service."})
-        return attrs
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True) 

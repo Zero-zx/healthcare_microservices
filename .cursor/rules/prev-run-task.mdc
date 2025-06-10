@@ -1,8 +1,12 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
+- Tell me "Done" after finish tasks below
+- Read all projects code first to undestand project structure, goal and functions.
 - Alway rememeber that project using Django + Docker for backend an typescript for frontend
 - Read [docker-compose.yml](mdc:docker-compose.yml) to understand api endpoints and use direct port like 8004, 8005
-- Frontend and backend need to be fit
+- Frontend and backend need to be fit and match together to run correctly
+- Services should communite among them by rest api
+- Alway set allow host to all to prevent cor issues

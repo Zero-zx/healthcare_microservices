@@ -1,26 +1,32 @@
 export interface Patient {
+    id: string;
     user_id: string;
     name: string;
     age: number;
     gender: 'male' | 'female' | 'other';
     phone: string;
-    email: string;
     address: string;
-    medical_history?: string;
-    patient_type: 'guest' | 'offline' | 'remote';
-    preferred_contact_method?: 'phone' | 'email' | 'video';
-    timezone?: string;
+    medical_history?: string | null;
+    patient_type: 'current' | 'remote' | 'emergency' | 'referral' | 'chronic' | 'preventive';
+    preferred_contact_method?: 'phone' | 'email' | 'video' | null;
+    timezone?: string | null;
     created_at: string;
     updated_at: string;
 }
 
 export interface Doctor {
+    id: string;
     user_id: string;
-    name: string;
-    specialty: string;
-    license: string;
-    phone: string;
-    email: string;
+    name?: string;
+    specialization: string;
+    license_number: string;
+    years_of_experience: number;
+    education: string;
+    certifications?: string | null;
+    languages: string;
+    schedules?: any[];
+    created_at: string;
+    updated_at: string;
 }
 
 export interface CreatePatientDto {
@@ -28,20 +34,21 @@ export interface CreatePatientDto {
     age: number;
     gender: 'male' | 'female' | 'other';
     phone: string;
-    email: string;
     address: string;
     medical_history?: string;
-    patient_type: 'guest' | 'offline' | 'remote';
+    patient_type: 'current' | 'remote' | 'emergency' | 'referral' | 'chronic' | 'preventive';
     preferred_contact_method?: 'phone' | 'email' | 'video';
     timezone?: string;
 }
 
 export interface CreateDoctorDto {
     name: string;
-    specialty: string;
-    license: string;
-    phone: string;
-    email: string;
+    specialization: string;
+    license_number: string;
+    years_of_experience: number;
+    education: string;
+    certifications?: string;
+    languages: string;
 }
 
 export interface UpdatePatientDto extends Partial<CreatePatientDto> {}

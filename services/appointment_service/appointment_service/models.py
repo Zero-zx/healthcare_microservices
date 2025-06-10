@@ -1,5 +1,4 @@
 from django.db import models
-import uuid
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Appointment(models.Model):
@@ -10,9 +9,9 @@ class Appointment(models.Model):
         ('completed', 'Completed')
     ]
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    patient_id = models.UUIDField()  # References patient-service
-    doctor_id = models.UUIDField()   # References doctor-service
+    id = models.CharField(primary_key=True, max_length=64)
+    patient_id = models.CharField(max_length=64)  # References patient-service
+    doctor_id = models.CharField(max_length=64)   # References doctor-service
     date = models.DateField()
     time = models.TimeField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')

@@ -22,29 +22,7 @@ import {
 } from '@mui/material';
 import axios from 'axios';
 import { Appointment } from '../types/appointment';
-
-// Define Patient and Doctor types (adjust if necessary)
-interface Patient {
-  user_id: string;  // Changed from id to user_id to match backend
-  name: string;
-  age: number;
-  gender: string;
-  phone: string;
-  email: string;
-  address: string;
-  medical_history?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface Doctor {
-  user_id: string;  // Changed from id to user_id to match backend
-  name: string;
-  specialty: string;
-  license: string;
-  phone: string;
-  email: string;
-}
+import { Patient, Doctor } from '../types/user';
 
 // Adjusting form values to match backend snake_case expectations
 interface AppointmentFormValues {
@@ -70,6 +48,10 @@ const validationSchema = Yup.object({
     .required('Duration is required'),
 });
 
+const API_URL = process.env.REACT_APP_APPOINTMENT_API_URL || 'http://localhost:8000/api/appointments/';
+const PATIENT_API_URL = process.env.REACT_APP_PATIENT_API_URL || 'http://localhost:8000/api/patients/';
+const DOCTOR_API_URL = process.env.REACT_APP_DOCTOR_API_URL || 'http://localhost:8000/api/doctors/';
+
 const Appointments: React.FC = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -80,32 +62,65 @@ const Appointments: React.FC = () => {
       try {
         const token = localStorage.getItem('token');
         const headers = { Authorization: `Bearer ${token}` };
+        const config = { headers, withCredentials: true };
 
-        console.log('Fetching data with headers:', headers);
+        console.log('Starting to fetch data...');
 
-        // Try fetching each service separately to identify which one is failing
+        // Fetch patients
         try {
-          const patientsResponse = await axios.get('http://localhost:8004/api/patients/', { headers });
-          console.log('Patients Response:', patientsResponse.data);
+          console.log('Fetching patients from:', PATIENT_API_URL);
+          const patientsResponse = await axios.get(PATIENT_API_URL, config);
+          console.log('Patients Response Status:', patientsResponse.status);
+          console.log('Patients Response Data:', JSON.stringify(patientsResponse.data, null, 2));
           setPatients(patientsResponse.data);
         } catch (error) {
           console.error('Error fetching patients:', error);
+          if (axios.isAxiosError(error)) {
+            console.error('Error details:', {
+              status: error.response?.status,
+              statusText: error.response?.statusText,
+              data: error.response?.data
+            });
+          }
         }
 
+        // Fetch doctors
         try {
-          const doctorsResponse = await axios.get('http://localhost:8003/api/doctors/', { headers });
-          console.log('Doctors Response:', doctorsResponse.data);
+          console.log('Fetching doctors from:', DOCTOR_API_URL);
+          const doctorsResponse = await axios.get(DOCTOR_API_URL, config);
+          console.log('Doctors Response Status:', doctorsResponse.status);
+          console.log('Doctors Response Data:', JSON.stringify(doctorsResponse.data, null, 2));
           setDoctors(doctorsResponse.data);
         } catch (error) {
           console.error('Error fetching doctors:', error);
+          if (axios.isAxiosError(error)) {
+            console.error('Error details:', {
+              status: error.response?.status,
+              statusText: error.response?.statusText,
+              data: error.response?.data
+            });
+          }
         }
 
+        // Fetch appointments
         try {
-          const appointmentsResponse = await axios.get('http://localhost:8005/api/appointments/', { headers });
-          console.log('Appointments Response:', appointmentsResponse.data);
-          setAppointments(appointmentsResponse.data.results);
+          console.log('Fetching appointments from:', API_URL);
+          const appointmentsResponse = await axios.get(API_URL, config);
+          console.log('Appointments Response Status:', appointmentsResponse.status);
+          console.log('Appointments Response Data:', JSON.stringify(appointmentsResponse.data, null, 2));
+          // Check if the response has a results array
+          const appointmentsData = appointmentsResponse.data.results || appointmentsResponse.data;
+          console.log('Processed appointments data:', appointmentsData);
+          setAppointments(appointmentsData);
         } catch (error) {
           console.error('Error fetching appointments:', error);
+          if (axios.isAxiosError(error)) {
+            console.error('Error details:', {
+              status: error.response?.status,
+              statusText: error.response?.statusText,
+              data: error.response?.data
+            });
+          }
         }
 
       } catch (error) {
@@ -132,14 +147,13 @@ const Appointments: React.FC = () => {
         const token = localStorage.getItem('token');
         console.log('Creating appointment with values:', values);
         
-        // Format the data according to the backend expectations
         const appointmentData = {
           patient_id: values.patient_id,
           doctor_id: values.doctor_id,
           date: values.date,
           time: values.time,
           notes: values.notes || '',
-          status: 'pending', // Changed to match backend default
+          status: 'pending',
           service_type: values.service_type,
           duration: values.duration
         };
@@ -147,13 +161,14 @@ const Appointments: React.FC = () => {
         console.log('Sending appointment data:', appointmentData);
 
         const response = await axios.post(
-          'http://localhost:8005/api/appointments/',
+          API_URL,
           appointmentData,
           {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
+            withCredentials: true
           }
         );
 
@@ -161,14 +176,18 @@ const Appointments: React.FC = () => {
         
         // Refresh appointments list
         try {
-          const appointmentsResponse = await axios.get('http://localhost:8005/api/appointments/', {
+          const appointmentsResponse = await axios.get(API_URL, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
+            withCredentials: true
           });
           console.log('Refreshed appointments:', appointmentsResponse.data);
-          setAppointments(appointmentsResponse.data.results);
+          // Check if the response has a results array
+          const appointmentsData = appointmentsResponse.data.results || appointmentsResponse.data;
+          console.log('Processed appointments data:', appointmentsData);
+          setAppointments(appointmentsData);
         } catch (error) {
           console.error('Error refreshing appointments:', error);
         }
@@ -177,16 +196,12 @@ const Appointments: React.FC = () => {
       } catch (error: any) {
         console.error('Error creating appointment:', error);
         if (error.response) {
-          // The request was made and the server responded with a status code
-          // that falls out of the range of 2xx
           console.error('Error response data:', error.response.data);
           console.error('Error response status:', error.response.status);
           console.error('Error response headers:', error.response.headers);
         } else if (error.request) {
-          // The request was made but no response was received
           console.error('Error request:', error.request);
         } else {
-          // Something happened in setting up the request that triggered an Error
           console.error('Error message:', error.message);
         }
       }
@@ -344,8 +359,10 @@ const Appointments: React.FC = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Patient</TableCell>
-                  <TableCell>Doctor</TableCell>
+                  <TableCell>Patient Name</TableCell>
+                  <TableCell>Patient Info</TableCell>
+                  <TableCell>Doctor Name</TableCell>
+                  <TableCell>Doctor Info</TableCell>
                   <TableCell>Date</TableCell>
                   <TableCell>Time</TableCell>
                   <TableCell>Service</TableCell>
@@ -355,22 +372,53 @@ const Appointments: React.FC = () => {
               <TableBody>
                 {Array.isArray(appointments) ? (
                   appointments.map((appointment) => {
+                    console.log('Processing appointment:', appointment);
                     const patient = patients.find(p => p.user_id === appointment.patient_id);
                     const doctor = doctors.find(d => d.user_id === appointment.doctor_id);
+                    
+                    console.log('Found patient:', patient);
+                    console.log('Found doctor:', doctor);
+
+                    // Skip appointments with empty IDs
+                    if (!appointment.id) {
+                      console.warn('Skipping appointment with empty ID:', appointment);
+                      return null;
+                    }
+
                     return (
                       <TableRow key={appointment.id}>
                         <TableCell>{patient?.name || 'Unknown Patient'}</TableCell>
+                        <TableCell>
+                          {patient ? (
+                            <>
+                              Age: {patient.age}<br />
+                              {patient.patient_type && `Type: ${patient.patient_type}`}<br />
+                              Phone: {patient.phone}
+                            </>
+                          ) : 'N/A'}
+                        </TableCell>
                         <TableCell>{doctor?.name || 'Unknown Doctor'}</TableCell>
+                        <TableCell>
+                          {doctor ? (
+                            <>
+                              {doctor.specialization && `Specialization: ${doctor.specialization}`}<br />
+                              {doctor.license_number && `License: ${doctor.license_number}`}<br />
+                              {doctor.years_of_experience && `Experience: ${doctor.years_of_experience} years`}
+                            </>
+                          ) : 'N/A'}
+                        </TableCell>
                         <TableCell>{appointment.date}</TableCell>
                         <TableCell>{appointment.time}</TableCell>
                         <TableCell>{appointment.service_type}</TableCell>
                         <TableCell>{appointment.duration} min</TableCell>
                       </TableRow>
                     );
-                  })
+                  }).filter(Boolean)
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6}>No appointments found or data error.</TableCell>
+                    <TableCell colSpan={8}>
+                      No appointments found or data error.
+                    </TableCell>
                   </TableRow>
                 )}
               </TableBody>

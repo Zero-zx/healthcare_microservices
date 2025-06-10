@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
+from django.http import Http404
 from .models import Patient, User
 from .serializers import (
     PatientSerializer, 
@@ -10,6 +11,10 @@ from .serializers import (
     RegisterSerializer, 
     LoginSerializer
 )
+import requests
+import logging
+
+logger = logging.getLogger(__name__)
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -21,13 +26,9 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         
-        # Generate tokens
-        refresh = RefreshToken.for_user(user)
-        
         return Response({
-            'user': UserSerializer(user).data,
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
+            'message': 'User registered successfully',
+            'user': UserSerializer(user).data
         }, status=status.HTTP_201_CREATED)
 
 class LoginView(generics.CreateAPIView):
@@ -65,13 +66,28 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
 class PatientListCreateView(generics.ListCreateAPIView):
     queryset = Patient.objects.all()
     serializer_class = PatientSerializer
-    permission_classes = (AllowAny,)
+    permission_classes = (AllowAny,)  # Allow creation without auth for registration flow
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        try:
+            # Create patient profile
+            serializer.save()
+        except Exception as e:
+            logger.error(f"Error creating patient profile: {str(e)}")
+            raise
 
 class PatientRetrieveUpdateView(generics.RetrieveUpdateAPIView):
     queryset = Patient.objects.all()
     serializer_class = PatientSerializer
-    permission_classes = (AllowAny,)
-    lookup_field = 'user_id' 
+    permission_classes = (IsAuthenticated,)
+
+    def get_object(self):
+        try:
+            # Get patient profile by user_id
+            user_id = self.request.data.get('user_id')
+            if not user_id:
+                raise Http404("User ID is required")
+            
+            return Patient.objects.get(user_id=user_id)
+        except Patient.DoesNotExist:
+            raise Http404("Patient profile not found") 

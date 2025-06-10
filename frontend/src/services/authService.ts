@@ -1,49 +1,37 @@
 import axios from 'axios';
-import { AuthResponse, LoginRequest, RegisterRequest } from '../types/auth';
+import { RegisterRequest, LoginRequest, AuthResponse } from '../types/auth';
 
-const PATIENT_API_URL = process.env.REACT_APP_PATIENT_API_URL || 'http://localhost:8004';
-const DOCTOR_API_URL = process.env.REACT_APP_DOCTOR_API_URL || 'http://localhost:8003';
+const API_URL = process.env.REACT_APP_AUTH_API_URL || 'http://localhost:8000/api/users';
 
 export const authService = {
-    login: async (data: LoginRequest & { role?: 'patient' | 'doctor' }): Promise<AuthResponse> => {
-        const baseUrl = data.role === 'doctor' ? DOCTOR_API_URL : PATIENT_API_URL;
-        const endpoint = data.role === 'doctor' ? '/api/doctors/login/' : '/api/patients/login/';
-        const response = await axios.post(`${baseUrl}${endpoint}`, data);
-        if (response.data.access) {
-            localStorage.setItem('access', response.data.access);
-            localStorage.setItem('refresh', response.data.refresh);
-        }
+    async register(data: RegisterRequest): Promise<AuthResponse> {
+        const response = await axios.post(`${API_URL}/register/`, data);
         return response.data;
     },
 
-    register: async (data: RegisterRequest): Promise<AuthResponse> => {
-        const baseUrl = data.role === 'doctor' ? DOCTOR_API_URL : PATIENT_API_URL;
-        const endpoint = data.role === 'doctor' ? '/api/doctors/register/' : '/api/patients/register/';
-        const response = await axios.post(`${baseUrl}${endpoint}`, data);
-        if (response.data.access) {
-            localStorage.setItem('access', response.data.access);
-            localStorage.setItem('refresh', response.data.refresh);
-        }
+    async login(data: LoginRequest): Promise<AuthResponse> {
+        const response = await axios.post(`${API_URL}/login/`, data);
         return response.data;
     },
 
-    logout: () => {
-        localStorage.removeItem('access');
-        localStorage.removeItem('refresh');
-    },
-
-    getCurrentUser: async (): Promise<AuthResponse> => {
-        const response = await axios.get(`${PATIENT_API_URL}/api/profile/`);
-        return response.data;
-    },
-
-    refreshToken: async (): Promise<AuthResponse> => {
-        const response = await axios.post(`${PATIENT_API_URL}/api/token/refresh/`, {
-            refresh: localStorage.getItem('refresh')
+    async getProfile(): Promise<any> {
+        const response = await axios.get(`${API_URL}/profile/`, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('access_token')}`
+            }
         });
-        if (response.data.access) {
-            localStorage.setItem('access', response.data.access);
-        }
         return response.data;
+    },
+
+    async refreshToken(): Promise<AuthResponse> {
+        const response = await axios.post(`${API_URL}/token/refresh/`, {
+            refresh: localStorage.getItem('refresh_token')
+        });
+        return response.data;
+    },
+
+    logout(): void {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
     }
 }; 

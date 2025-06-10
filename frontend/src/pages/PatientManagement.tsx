@@ -20,7 +20,7 @@ import {
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { Patient, CreatePatientDto } from '../types/user';
 import { patientService } from '../services/userService';
-import { UserForm } from '../components/UserForm';
+import UserForm from '../components/UserForm';
 import PersonIcon from '@mui/icons-material/Person';
 
 export const PatientManagement: React.FC = () => {
@@ -34,6 +34,7 @@ export const PatientManagement: React.FC = () => {
         try {
             setLoading(true);
             const data = await patientService.getAll();
+            console.log('Patients Data:', JSON.stringify(data, null, 2));
             setPatients(data);
             setError(null);
         } catch (err) {
@@ -127,9 +128,14 @@ export const PatientManagement: React.FC = () => {
                         <TableRow sx={{ background: 'linear-gradient(90deg, #e3f2fd 0%, #fce4ec 100%)' }}>
                             <TableCell></TableCell>
                             <TableCell>Name</TableCell>
-                            <TableCell>Email</TableCell>
-                            <TableCell>Phone</TableCell>
+                            <TableCell>Age</TableCell>
                             <TableCell>Gender</TableCell>
+                            <TableCell>Phone</TableCell>
+                            <TableCell>Address</TableCell>
+                            <TableCell>Medical History</TableCell>
+                            <TableCell>Patient Type</TableCell>
+                            <TableCell>Preferred Contact</TableCell>
+                            <TableCell>Timezone</TableCell>
                             <TableCell>Actions</TableCell>
                         </TableRow>
                     </TableHead>
@@ -142,9 +148,14 @@ export const PatientManagement: React.FC = () => {
                                     </Avatar>
                                 </TableCell>
                                 <TableCell>{patient.name}</TableCell>
-                                <TableCell>{patient.email}</TableCell>
-                                <TableCell>{patient.phone}</TableCell>
+                                <TableCell>{patient.age}</TableCell>
                                 <TableCell>{patient.gender}</TableCell>
+                                <TableCell>{patient.phone}</TableCell>
+                                <TableCell>{patient.address}</TableCell>
+                                <TableCell>{patient.medical_history || '-'}</TableCell>
+                                <TableCell>{patient.patient_type}</TableCell>
+                                <TableCell>{patient.preferred_contact_method || '-'}</TableCell>
+                                <TableCell>{patient.timezone || '-'}</TableCell>
                                 <TableCell>
                                     <IconButton
                                         color="primary"
@@ -172,7 +183,17 @@ export const PatientManagement: React.FC = () => {
                 <DialogContent sx={{ p: 2, borderRadius: 2 }}>
                     <UserForm
                         type="patient"
-                        initialData={selectedPatient || undefined}
+                        initialData={selectedPatient ? {
+                            name: selectedPatient.name,
+                            age: selectedPatient.age,
+                            gender: selectedPatient.gender,
+                            phone: selectedPatient.phone,
+                            address: selectedPatient.address,
+                            medical_history: selectedPatient.medical_history || undefined,
+                            patient_type: selectedPatient.patient_type,
+                            preferred_contact_method: selectedPatient.preferred_contact_method || undefined,
+                            timezone: selectedPatient.timezone || undefined
+                        } : undefined}
                         onSubmit={selectedPatient ? handleUpdate : handleCreate}
                         onCancel={handleCloseDialog}
                     />

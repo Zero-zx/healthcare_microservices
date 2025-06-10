@@ -1,26 +1,59 @@
 -- Use the appropriate databases
-USE patient_db;
+
+-- USE doctor_db;-- 
+
+-- -- Seed data for doctors and patients
+
+-- -- Insert doctors
+-- INSERT INTO doctor_doctor (id, user_id, specialization, license_number, years_of_experience, education, certifications, languages, created_at, updated_at)
+-- VALUES
+--     (1, 1, 'Cardiology', 'MD323456', 10, 'Harvard Medical School', 'Board Certified in Cardiology', 'English, Spanish', NOW(), NOW()),
+--     (2, 2, 'Neurology', 'MD123457', 8, 'Johns Hopkins University', 'Board Certified in Neurology', 'English, French', NOW(), NOW()),
+--     (3, 3, 'Pediatrics', 'MD123458', 12, 'Stanford Medical School', 'Board Certified in Pediatrics', 'English, Mandarin', NOW(), NOW()),
+--     (4, 4, 'Orthopedics', 'MD123459', 15, 'Mayo Clinic School of Medicine', 'Board Certified in Orthopedics', 'English, German', NOW(), NOW()),
+--     (5, 5, 'Dermatology', 'MD123460', 7, 'Yale School of Medicine', 'Board Certified in Dermatology', 'English, Italian', NOW(), NOW()),
+--     (6, 6, 'Psychiatry', 'MD123461', 9, 'Columbia University', 'Board Certified in Psychiatry', 'English, Russian', NOW(), NOW()),
+--     (7, 7, 'Ophthalmology', 'MD123462', 11, 'UCLA Medical School', 'Board Certified in Ophthalmology', 'English, Japanese', NOW(), NOW()),
+--     (8, 8, 'Gynecology', 'MD123463', 13, 'Duke University', 'Board Certified in Gynecology', 'English, Portuguese', NOW(), NOW()),
+--     (9, 9, 'Urology', 'MD123464', 6, 'University of Michigan', 'Board Certified in Urology', 'English, Arabic', NOW(), NOW()),
+--     (10, 10, 'Endocrinology', 'MD123465', 14, 'University of Pennsylvania', 'Board Certified in Endocrinology', 'English, Korean', NOW(), NOW());
+
 USE doctor_db;
-
 -- Seed data for doctors
-INSERT INTO doctors (first_name, last_name, email, phone_number, specialization, license_number, years_of_experience, department, created_at, updated_at)
+INSERT INTO doctor_doctor (id, user_id, name, specialization, license_number, years_of_experience, education, certifications, languages, created_at, updated_at)
 VALUES
-    ('John', 'Smith', 'john.smith@hospital.com', '+1234567890', 'Cardiology', 'MD123456', 10, 'Cardiology', NOW(), NOW()),
-    ('Sarah', 'Johnson', 'sarah.johnson@hospital.com', '+1234567891', 'Neurology', 'MD123457', 8, 'Neurology', NOW(), NOW()),
-    ('Michael', 'Chen', 'michael.chen@hospital.com', '+1234567892', 'Pediatrics', 'MD123458', 12, 'Pediatrics', NOW(), NOW()),
-    ('Emily', 'Davis', 'emily.davis@hospital.com', '+1234567893', 'Orthopedics', 'MD123459', 15, 'Orthopedics', NOW(), NOW()),
-    ('David', 'Wilson', 'david.wilson@hospital.com', '+1234567894', 'Dermatology', 'MD123460', 7, 'Dermatology', NOW(), NOW());
+    ('1', '1', 'Dr. John Smith', 'Cardiology', 'MD323456', 10, 'Harvard Medical School', 'Board Certified in Cardiology', 'English, Spanish', NOW(), NOW()),
+    ('2', '2', 'Dr. Jane Doe', 'Neurology', 'MD123457', 8, 'Johns Hopkins University', 'Board Certified in Neurology', 'English, French', NOW(), NOW()),
+    ('3', '3', 'Dr. Alice Johnson', 'Pediatrics', 'MD123458', 12, 'Stanford Medical School', 'Board Certified in Pediatrics', 'English, Mandarin', NOW(), NOW()),
+    ('4', '4', 'Dr. Bob Wilson', 'Orthopedics', 'MD123459', 15, 'Mayo Clinic School of Medicine', 'Board Certified in Orthopedics', 'English, German', NOW(), NOW()),
+    ('5', '5', 'Dr. Carol Brown', 'Dermatology', 'MD123460', 7, 'Yale School of Medicine', 'Board Certified in Dermatology', 'English, Italian', NOW(), NOW()),
+    ('6', '6', 'Dr. David Lee', 'Psychiatry', 'MD123461', 9, 'Columbia University', 'Board Certified in Psychiatry', 'English, Russian', NOW(), NOW()),
+    ('7', '7', 'Dr. Eve Davis', 'Ophthalmology', 'MD123462', 11, 'UCLA Medical School', 'Board Certified in Ophthalmology', 'English, Japanese', NOW(), NOW()),
+    ('8', '8', 'Dr. Frank Miller', 'Gynecology', 'MD123463', 13, 'Duke University', 'Board Certified in Gynecology', 'English, Portuguese', NOW(), NOW()),
+    ('9', '9', 'Dr. Grace Taylor', 'Urology', 'MD123464', 6, 'University of Michigan', 'Board Certified in Urology', 'English, Arabic', NOW(), NOW()),
+    ('10', '10', 'Dr. Henry Clark', 'Endocrinology', 'MD123465', 14, 'University of Pennsylvania', 'Board Certified in Endocrinology', 'English, Korean', NOW(), NOW());
 
+USE patient_db;
 -- Seed data for patients
-INSERT INTO patients (first_name, last_name, email, phone_number, date_of_birth, gender, address, medical_history, created_at, updated_at)
+INSERT INTO patients_patient (id, user_id, name, age, gender, phone, address, medical_history, patient_type, preferred_contact_method, timezone, created_at, updated_at)
 VALUES
-    ('Alice', 'Brown', 'alice.brown@email.com', '+1987654321', '1990-05-15', 'FEMALE', '123 Main St, City', 'No significant medical history', NOW(), NOW()),
-    ('Robert', 'Taylor', 'robert.taylor@email.com', '+1987654322', '1985-08-22', 'MALE', '456 Oak Ave, Town', 'Hypertension', NOW(), NOW()),
-    ('Maria', 'Garcia', 'maria.garcia@email.com', '+1987654323', '1995-03-10', 'FEMALE', '789 Pine Rd, Village', 'Asthma', NOW(), NOW()),
-    ('James', 'Anderson', 'james.anderson@email.com', '+1987654324', '1978-11-30', 'MALE', '321 Elm St, City', 'Type 2 Diabetes', NOW(), NOW()),
-    ('Lisa', 'Martinez', 'lisa.martinez@email.com', '+1987654325', '1992-07-18', 'FEMALE', '654 Maple Dr, Town', 'No significant medical history', NOW(), NOW()),
-    ('William', 'Thompson', 'william.thompson@email.com', '+1987654326', '1982-04-25', 'MALE', '987 Cedar Ln, Village', 'Arthritis', NOW(), NOW()),
-    ('Emma', 'White', 'emma.white@email.com', '+1987654327', '1998-09-12', 'FEMALE', '147 Birch St, City', 'No significant medical history', NOW(), NOW()),
-    ('Daniel', 'Lee', 'daniel.lee@email.com', '+1987654328', '1975-12-05', 'MALE', '258 Spruce Ave, Town', 'Heart Disease', NOW(), NOW()),
-    ('Sophia', 'Clark', 'sophia.clark@email.com', '+1987654329', '1993-06-28', 'FEMALE', '369 Willow Rd, Village', 'Migraine', NOW(), NOW()),
-    ('Matthew', 'Rodriguez', 'matthew.rodriguez@email.com', '+1987654330', '1988-02-14', 'MALE', '741 Ash St, City', 'No significant medical history', NOW(), NOW()); 
+    ('1', '11', 'Alice Brown', 32, 'FEMALE', '+1987654321', '123 Main St, Boston, MA', 'No significant medical history', 'CURRENT', 'EMAIL', 'America/New_York', NOW(), NOW()),
+    ('2', '12', 'Robert Taylor', 37, 'MALE', '+1987654322', '456 Oak Ave, Chicago, IL', 'Hypertension', 'CHRONIC', 'PHONE', 'America/Chicago', NOW(), NOW()),
+    ('3', '13', 'Maria Garcia', 27, 'FEMALE', '+1987654323', '789 Pine Rd, Miami, FL', 'Asthma', 'REMOTE', 'SMS', 'America/New_York', NOW(), NOW()),
+    ('4', '14', 'James Anderson', 44, 'MALE', '+1987654324', '321 Elm St, Seattle, WA', 'Type 2 Diabetes', 'EMERGENCY', 'EMAIL', 'America/Los_Angeles', NOW(), NOW()),
+    ('5', '15', 'Lisa Martinez', 30, 'FEMALE', '+1987654325', '654 Maple Dr, Denver, CO', 'No significant medical history', 'PREVENTIVE', 'PHONE', 'America/Denver', NOW(), NOW()),
+    ('6', '16', 'William Thompson', 40, 'MALE', '+1987654326', '987 Cedar Ln, Phoenix, AZ', 'Arthritis', 'REFERRAL', 'SMS', 'America/Phoenix', NOW(), NOW()),
+    ('7', '17', 'Emma White', 24, 'FEMALE', '+1987654327', '147 Birch St, Portland, OR', 'No significant medical history', 'CURRENT', 'EMAIL', 'America/Los_Angeles', NOW(), NOW()), 
+    ('8', '18', 'Daniel Lee', 47, 'MALE', '+1987654328', '258 Spruce Ave, Houston, TX', 'Heart Disease', 'REMOTE', 'PHONE', 'America/Chicago', NOW(), NOW()),
+    ('9', '19', 'Sophia Clark', 29, 'FEMALE', '+1987654329', '369 Willow Rd, Atlanta, GA', 'Migraine', 'EMERGENCY', 'SMS', 'America/New_York', NOW(), NOW()),
+    ('10', '20', 'Matthew Rodriguez', 34, 'MALE', '+1987654330', '741 Ash St, San Diego, CA', 'No significant medical history', 'PREVENTIVE', 'EMAIL', 'America/Los_Angeles', NOW(), NOW()),
+    ('11', '21', 'Olivia Wilson', 31, 'FEMALE', '+1987654331', '852 Oak St, Austin, TX', 'Anxiety', 'CURRENT', 'PHONE', 'America/Chicago', NOW(), NOW()),
+    ('12', '22', 'Ethan Moore', 38, 'MALE', '+1987654332', '963 Pine Ave, Nashville, TN', 'High Cholesterol', 'REFERRAL', 'EMAIL', 'America/Chicago', NOW(), NOW()),
+    ('13', '23', 'Ava Jackson', 26, 'FEMALE', '+1987654333', '159 Maple Rd, Las Vegas, NV', 'No significant medical history', 'EMERGENCY', 'EMAIL', 'America/Los_Angeles', NOW(), NOW()),
+    ('14', '24', 'Noah Martin', 42, 'MALE', '+1987654334', '357 Cedar St, Philadelphia, PA', 'Sleep Apnea', 'REFERRAL', 'PHONE', 'America/New_York', NOW(), NOW()),
+    ('15', '25', 'Isabella Thompson', 28, 'FEMALE', '+1987654335', '486 Birch Ave, San Francisco, CA', 'No significant medical history', 'PREVENTIVE', 'SMS', 'America/Los_Angeles', NOW(), NOW()),
+    ('16', '26', 'Liam Davis', 45, 'MALE', '+1987654336', '753 Willow St, Washington, DC', 'Hypertension', 'CHRONIC', 'EMAIL', 'America/New_York', NOW(), NOW()),
+    ('17', '27', 'Mia Anderson', 33, 'FEMALE', '+1987654337', '951 Elm Rd, Dallas, TX', 'No significant medical history', 'REMOTE', 'PHONE', 'America/Chicago', NOW(), NOW()),
+    ('18', '28', 'Lucas Wilson', 39, 'MALE', '+1987654338', '264 Spruce Ave, Minneapolis, MN', 'Type 1 Diabetes', 'CHRONIC', 'SMS', 'America/Chicago', NOW(), NOW()),
+    ('19', '29', 'Charlotte Brown', 25, 'FEMALE', '+1987654339', '852 Oak St, Portland, ME', 'No significant medical history', 'PREVENTIVE', 'EMAIL', 'America/New_York', NOW(), NOW()),
+    ('20', '30', 'Mason Taylor', 36, 'MALE', '+1987654340', '963 Pine Rd, Salt Lake City, UT', 'Asthma', 'EMERGENCY', 'PHONE', 'America/Denver', NOW(), NOW());

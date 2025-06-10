@@ -1,57 +1,140 @@
 import axios from 'axios';
 import { Patient, Doctor, CreatePatientDto, CreateDoctorDto, UpdatePatientDto, UpdateDoctorDto } from '../types/user';
 
-const PATIENT_API_URL = process.env.REACT_APP_PATIENT_API_URL || 'http://localhost:8004';
-const DOCTOR_API_URL = process.env.REACT_APP_DOCTOR_API_URL || 'http://localhost:8003';
+// Use relative URL since we're using the proxy
+const API_URL = '/api';
+
+// Configure axios defaults
+axios.defaults.withCredentials = true;
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+axios.defaults.headers.common['Accept'] = 'application/json';
 
 // Patient Services
 export const patientService = {
     getAll: async (): Promise<Patient[]> => {
-        const response = await axios.get(`${PATIENT_API_URL}/api/patients/patients/`);
-        return response.data;
+        try {
+            const response = await axios.get(`${API_URL}/patients/`);
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                console.error('Error fetching patients:', {
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    data: error.response?.data,
+                    headers: error.response?.headers,
+                });
+            }
+            throw error;
+        }
     },
 
     getById: async (id: string): Promise<Patient> => {
-        const response = await axios.get(`${PATIENT_API_URL}/api/patients/${id}/`);
-        return response.data;
+        try {
+            const response = await axios.get(`${API_URL}/patients/${id}/`);
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                console.error('Error fetching patient:', {
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    data: error.response?.data,
+                });
+            }
+            throw error;
+        }
     },
 
     create: async (patient: CreatePatientDto): Promise<Patient> => {
-        const response = await axios.post(`${PATIENT_API_URL}/api/patients/`, patient);
-        return response.data;
+        try {
+            const response = await axios.post(`${API_URL}/patients/`, patient);
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                console.error('Error creating patient:', {
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    data: error.response?.data,
+                });
+            }
+            throw error;
+        }
     },
 
     update: async (id: string, patient: UpdatePatientDto): Promise<Patient> => {
-        const response = await axios.put(`${PATIENT_API_URL}/api/patients/${id}/`, patient);
-        return response.data;
+        try {
+            const response = await axios.put(`${API_URL}/patients/${id}/`, patient);
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                console.error('Error updating patient:', {
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    data: error.response?.data,
+                });
+            }
+            throw error;
+        }
     },
 
     delete: async (id: string): Promise<void> => {
-        await axios.delete(`${PATIENT_API_URL}/api/patients/${id}/`);
+        try {
+            await axios.delete(`${API_URL}/patients/${id}/`);
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                console.error('Error deleting patient:', {
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    data: error.response?.data,
+                });
+            }
+            throw error;
+        }
     }
 };
 
 // Doctor Services
 export const doctorService = {
     getAll: async (): Promise<Doctor[]> => {
-        const response = await axios.get(`${DOCTOR_API_URL}/api/doctors/`);
-        return response.data;
+        try {
+            const response = await axios.get(`${API_URL}/doctors/`);
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                console.error('Error fetching doctors:', {
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    data: error.response?.data,
+                });
+            }
+            throw error;
+        }
     },
 
     getById: async (id: string): Promise<Doctor> => {
-        const response = await axios.get(`${DOCTOR_API_URL}/api/doctors/${id}/`);
-        return response.data;
+        try {
+            const response = await axios.get(`${API_URL}/doctors/${id}/`);
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                console.error('Error fetching doctor:', {
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    data: error.response?.data,
+                });
+            }
+            throw error;
+        }
     },
 
     create: async (doctor: CreateDoctorDto): Promise<Doctor> => {
-        console.log('Creating doctor with data:', JSON.stringify(doctor, null, 2));
         try {
-            const response = await axios.post(`${DOCTOR_API_URL}/api/doctors/`, doctor);
+            console.log('Creating doctor with data:', JSON.stringify(doctor, null, 2));
+            const response = await axios.post(`${API_URL}/doctors/`, doctor);
             console.log('Server response:', response.data);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
-                console.error('Error details:', {
+                console.error('Error creating doctor:', {
                     status: error.response?.status,
                     statusText: error.response?.statusText,
                     data: error.response?.data,
@@ -63,11 +146,33 @@ export const doctorService = {
     },
 
     update: async (id: string, doctor: UpdateDoctorDto): Promise<Doctor> => {
-        const response = await axios.put(`${DOCTOR_API_URL}/api/doctors/${id}/`, doctor);
-        return response.data;
+        try {
+            const response = await axios.put(`${API_URL}/doctors/${id}/`, doctor);
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                console.error('Error updating doctor:', {
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    data: error.response?.data,
+                });
+            }
+            throw error;
+        }
     },
 
     delete: async (id: string): Promise<void> => {
-        await axios.delete(`${DOCTOR_API_URL}/api/doctors/${id}/`);
+        try {
+            await axios.delete(`${API_URL}/doctors/${id}/`);
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                console.error('Error deleting doctor:', {
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    data: error.response?.data,
+                });
+            }
+            throw error;
+        }
     }
 }; 

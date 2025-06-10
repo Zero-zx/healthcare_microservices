@@ -18,6 +18,8 @@ export interface Message {
   sender: 'user' | 'bot';
 }
 
+const API_URL = process.env.REACT_APP_CHATBOT_API_URL || 'http://localhost:8002/api/chatbot';
+
 const Chatbot: React.FC = () => {
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [input, setInput] = React.useState('');
@@ -32,15 +34,14 @@ const Chatbot: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post(
-        'http://localhost:8008/api/chatbot/chat/',
-        { message: input, user_id: 'anonymous' },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const response = await axios.post(`${API_URL}/chat/`, {
+        message: input,
+        user_id: 'anonymous'
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
       const botMessage: Message = {
         text: response.data.response,

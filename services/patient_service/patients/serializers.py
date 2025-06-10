@@ -39,5 +39,29 @@ class PatientSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Patient
-        fields = '__all__'
-        read_only_fields = ('user', 'created_at', 'updated_at') 
+        fields = ('id', 'user', 'user_id', 'name', 'age', 'gender', 'phone', 'address',
+                 'medical_history', 'patient_type', 'preferred_contact_method',
+                 'timezone', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at')
+        extra_kwargs = {
+            'name': {'required': True},
+            'age': {'required': True},
+            'gender': {'required': True},
+            'phone': {'required': True},
+            'address': {'required': True},
+            'user_id': {'required': True},
+            'medical_history': {'required': False},
+            'patient_type': {'required': False},
+            'preferred_contact_method': {'required': False},
+            'timezone': {'required': False}
+        }
+
+    def validate_age(self, value):
+        if value < 0 or value > 150:
+            raise serializers.ValidationError("Age must be between 0 and 150")
+        return value
+
+    def validate_phone(self, value):
+        if not value.replace('+', '').replace('-', '').replace(' ', '').isdigit():
+            raise serializers.ValidationError("Phone number must contain only digits, spaces, hyphens, and plus sign")
+        return value 

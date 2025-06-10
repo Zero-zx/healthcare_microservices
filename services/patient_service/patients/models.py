@@ -25,7 +25,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         ('admin', 'Admin')
     ]
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, max_length=64)
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
     is_active = models.BooleanField(default=True)
@@ -48,12 +48,16 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class Patient(models.Model):
     PATIENT_TYPES = [
-        ('guest', 'Guest'),
-        ('offline', 'Offline Patient'),
-        ('remote', 'Remote Patient')
+        ('current', 'Current Patient'),
+        ('remote', 'Remote Patient'),
+        ('emergency', 'Emergency Patient'),
+        ('referral', 'Referred Patient'),
+        ('chronic', 'Chronic Care Patient'),
+        ('preventive', 'Preventive Care Patient')
     ]
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='patient_profile')
+    id = models.CharField(primary_key=True, max_length=64)
+    user_id = models.CharField(unique=True, max_length=64)  # Reference to user service
     name = models.CharField(max_length=100)
     age = models.IntegerField()
     gender = models.CharField(max_length=10, choices=[
@@ -64,7 +68,7 @@ class Patient(models.Model):
     phone = models.CharField(max_length=15)
     address = models.TextField()
     medical_history = models.TextField(blank=True, null=True)
-    patient_type = models.CharField(max_length=10, choices=PATIENT_TYPES, default='guest')
+    patient_type = models.CharField(max_length=20, choices=PATIENT_TYPES, default='current')
     # Fields specific to remote patients
     preferred_contact_method = models.CharField(
         max_length=20,
@@ -81,4 +85,4 @@ class Patient(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.name} ({self.user.email}) - {self.get_patient_type_display()}" 
+        return f"{self.name} - {self.get_patient_type_display()}" 

@@ -20,7 +20,7 @@ import {
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { Doctor, CreateDoctorDto } from '../types/user';
 import { doctorService } from '../services/userService';
-import { UserForm } from '../components/UserForm';
+import UserForm from '../components/UserForm';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 
 export const DoctorManagement: React.FC = () => {
@@ -34,6 +34,7 @@ export const DoctorManagement: React.FC = () => {
         try {
             setLoading(true);
             const data = await doctorService.getAll();
+            console.log('Doctors Data:', JSON.stringify(data, null, 2));
             setDoctors(data);
             setError(null);
         } catch (err) {
@@ -84,6 +85,15 @@ export const DoctorManagement: React.FC = () => {
     };
 
     const handleEdit = (doctor: Doctor) => {
+        const doctorData: CreateDoctorDto = {
+            name: doctor.name || '',
+            specialization: doctor.specialization,
+            license_number: doctor.license_number,
+            years_of_experience: doctor.years_of_experience,
+            education: doctor.education,
+            certifications: doctor.certifications || undefined,
+            languages: doctor.languages
+        };
         setSelectedDoctor(doctor);
         setOpenDialog(true);
     };
@@ -127,26 +137,28 @@ export const DoctorManagement: React.FC = () => {
                         <TableRow sx={{ background: 'linear-gradient(90deg, #e3f2fd 0%, #fce4ec 100%)' }}>
                             <TableCell></TableCell>
                             <TableCell>Name</TableCell>
-                            <TableCell>Email</TableCell>
-                            <TableCell>Phone</TableCell>
-                            <TableCell>Specialty</TableCell>
+                            <TableCell>Specialization</TableCell>
                             <TableCell>License</TableCell>
+                            <TableCell>Experience</TableCell>
+                            <TableCell>Education</TableCell>
+                            <TableCell>Languages</TableCell>
                             <TableCell>Actions</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {doctors.map((doctor) => (
-                            <TableRow key={doctor.user_id} hover sx={{ transition: 'background 0.2s', '&:hover': { background: 'primary.light', cursor: 'pointer' } }}>
+                            <TableRow key={doctor.id} hover sx={{ transition: 'background 0.2s', '&:hover': { background: 'primary.light', cursor: 'pointer' } }}>
                                 <TableCell>
                                     <Avatar sx={{ bgcolor: 'secondary.main' }}>
                                         <LocalHospitalIcon />
                                     </Avatar>
                                 </TableCell>
                                 <TableCell>{doctor.name}</TableCell>
-                                <TableCell>{doctor.email}</TableCell>
-                                <TableCell>{doctor.phone}</TableCell>
-                                <TableCell>{doctor.specialty}</TableCell>
-                                <TableCell>{doctor.license}</TableCell>
+                                <TableCell>{doctor.specialization}</TableCell>
+                                <TableCell>{doctor.license_number}</TableCell>
+                                <TableCell>{doctor.years_of_experience} years</TableCell>
+                                <TableCell>{doctor.education}</TableCell>
+                                <TableCell>{doctor.languages}</TableCell>
                                 <TableCell>
                                     <IconButton
                                         color="primary"
@@ -156,7 +168,7 @@ export const DoctorManagement: React.FC = () => {
                                     </IconButton>
                                     <IconButton
                                         color="error"
-                                        onClick={() => handleDelete(doctor.user_id)}
+                                        onClick={() => handleDelete(doctor.id)}
                                     >
                                         <DeleteIcon />
                                     </IconButton>
@@ -174,7 +186,15 @@ export const DoctorManagement: React.FC = () => {
                 <DialogContent sx={{ p: 2, borderRadius: 2 }}>
                     <UserForm
                         type="doctor"
-                        initialData={selectedDoctor || undefined}
+                        initialData={selectedDoctor ? {
+                            name: selectedDoctor.name || '',
+                            specialization: selectedDoctor.specialization,
+                            license_number: selectedDoctor.license_number,
+                            years_of_experience: selectedDoctor.years_of_experience,
+                            education: selectedDoctor.education,
+                            certifications: selectedDoctor.certifications || undefined,
+                            languages: selectedDoctor.languages
+                        } : undefined}
                         onSubmit={selectedDoctor ? handleUpdate : handleCreate}
                         onCancel={handleCloseDialog}
                     />

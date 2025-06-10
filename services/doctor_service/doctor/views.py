@@ -1,11 +1,13 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 import logging
 import json
+import requests
+from django.http import Http404
 
 from .models import Doctor, Schedule
 from .serializers import DoctorSerializer, ScheduleSerializer, RegisterSerializer, LoginSerializer
@@ -22,17 +24,13 @@ class RegisterView(generics.CreateAPIView):
             serializer.is_valid(raise_exception=True)
             user = serializer.save()
             
-            # Generate tokens
-            refresh = RefreshToken.for_user(user)
-            
             return Response({
+                'message': 'Doctor registered successfully',
                 'user': {
                     'id': str(user.id),
                     'email': user.email,
                     'role': user.role
-                },
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
+                }
             }, status=status.HTTP_201_CREATED)
         except Exception as e:
             logger.error(f"Registration error: {str(e)}")
@@ -80,29 +78,84 @@ class LoginView(generics.CreateAPIView):
 class DoctorListCreateView(generics.ListCreateAPIView):
     queryset = Doctor.objects.all()
     serializer_class = DoctorSerializer
+    permission_classes = (AllowAny,)
 
-    def create(self, request, *args, **kwargs):
-        logger.info(f"Creating doctor with data: {json.dumps(request.data, indent=2)}")
-        serializer = self.get_serializer(data=request.data)
-        if not serializer.is_valid():
-            logger.error(f"Validation error: {json.dumps(serializer.errors, indent=2)}")
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            self.perform_create(serializer)
-            logger.info(f"Doctor created successfully: {json.dumps(serializer.data, indent=2)}")
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            logger.error(f"Error creating doctor: {str(e)}")
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+    def perform_create(self, serializer):
+        # Simply save the doctor profile with the provided user_id
+        serializer.save(user_id=self.request.data['user_id'])
 
 class DoctorRetrieveUpdateView(generics.RetrieveUpdateAPIView):
     queryset = Doctor.objects.all()
     serializer_class = DoctorSerializer
-    lookup_field = 'user_id'
+    permission_classes = (IsAuthenticated,)
+
+    def get_object(self):
+        # Get user info from user service
+        try:
+            user_response = requests.get(
+                f'http://user_service:8000/api/profile/',
+                headers={'Authorization': f'Bearer {self.request.auth}'}
+            )
+            user_response.raise_for_status()
+            user_data = user_response.json()
+            
+            # Get doctor profile
+            return Doctor.objects.get(user_id=user_data['id'])
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error getting user info: {str(e)}")
+            raise
+        except Doctor.DoesNotExist:
+            raise Http404("Doctor profile not found")
 
 class ScheduleListCreateView(generics.ListCreateAPIView):
-    queryset = Schedule.objects.all()
     serializer_class = ScheduleSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        try:
+            user_response = requests.get(
+                f'http://user_service:8000/api/profile/',
+                headers={'Authorization': f'Bearer {self.request.auth}'}
+            )
+            user_response.raise_for_status()
+            user_data = user_response.json()
+            
+            doctor = Doctor.objects.get(user_id=user_data['id'])
+            return Schedule.objects.filter(doctor=doctor)
+        except (requests.exceptions.RequestException, Doctor.DoesNotExist) as e:
+            logger.error(f"Error getting schedules: {str(e)}")
+            raise
+
+    def perform_create(self, serializer):
+        try:
+            user_response = requests.get(
+                f'http://user_service:8000/api/profile/',
+                headers={'Authorization': f'Bearer {self.request.auth}'}
+            )
+            user_response.raise_for_status()
+            user_data = user_response.json()
+            
+            doctor = Doctor.objects.get(user_id=user_data['id'])
+            serializer.save(doctor=doctor)
+        except (requests.exceptions.RequestException, Doctor.DoesNotExist) as e:
+            logger.error(f"Error creating schedule: {str(e)}")
+            raise
+
+class ScheduleRetrieveUpdateView(generics.RetrieveUpdateAPIView):
+    serializer_class = ScheduleSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        try:
+            user_response = requests.get(
+                f'http://user_service:8000/api/profile/',
+                headers={'Authorization': f'Bearer {self.request.auth}'}
+            )
+            user_response.raise_for_status()
+            user_data = user_response.json()
+            
+            doctor = Doctor.objects.get(user_id=user_data['id'])
+            return Schedule.objects.filter(doctor=doctor)
+        except (requests.exceptions.RequestException, Doctor.DoesNotExist) as e:
+            logger.error(f"Error getting schedule: {str(e)}")
+            raise

@@ -1,5 +1,5 @@
 """
-ASGI config for patient_service project.
+ASGI config for patient-service project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 

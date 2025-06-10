@@ -1,5 +1,5 @@
 """
-WSGI config for patient_service project.
+WSGI config for patient-service project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
