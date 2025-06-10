@@ -52,7 +52,7 @@ const Prediction: React.FC = () => {
       try {
         const token = localStorage.getItem('token');
         const response = await axios.post(
-          'http://localhost:8007/api/predict/',
+          'http://localhost:8000/api/predict/',
           {
             ...values,
             symptoms,

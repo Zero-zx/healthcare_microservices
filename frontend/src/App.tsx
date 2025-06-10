@@ -10,6 +10,7 @@ import Appointments from './pages/Appointments';
 import { PatientManagement } from './pages/PatientManagement';
 import { DoctorManagement } from './pages/DoctorManagement';
 import Chatbot from './pages/Chatbot';
+import Prediction from './pages/Prediction';
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
@@ -79,6 +80,14 @@ const App: React.FC = () => {
                     element={
                         <ProtectedRoute>
                             <Chatbot />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/prediction"
+                    element={
+                        <ProtectedRoute>
+                            <Prediction />
                         </ProtectedRoute>
                     }
                 />

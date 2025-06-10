@@ -18,7 +18,7 @@ export interface Message {
   sender: 'user' | 'bot';
 }
 
-const API_URL = process.env.REACT_APP_CHATBOT_API_URL || 'http://localhost:8002/api/chatbot';
+const API_URL = process.env.REACT_APP_CHATBOT_API_URL || 'http://localhost:8000/api/chatbot';
 
 const Chatbot: React.FC = () => {
   const [messages, setMessages] = React.useState<Message[]>([]);
@@ -43,12 +43,15 @@ const Chatbot: React.FC = () => {
         },
       });
 
+      console.log('API Response:', response.data);
+
       const botMessage: Message = {
-        text: response.data.response,
+        text: response.data.reply,
         sender: 'bot',
       };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
+      console.error('Error:', error);
       const botMessage: Message = {
         text: 'Sorry, I encountered an error. Please try again.',
         sender: 'bot',
