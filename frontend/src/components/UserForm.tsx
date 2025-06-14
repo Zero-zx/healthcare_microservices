@@ -1,166 +1,153 @@
 import React from 'react';
 import {
     Box,
-    Button,
     TextField,
+    Button,
+    Grid,
     MenuItem,
-    Stack,
-    Typography,
+    Select,
+    FormControl,
+    InputLabel,
+    SelectChangeEvent
 } from '@mui/material';
-import { Patient, Doctor, CreatePatientDto, CreateDoctorDto } from '../types/user';
+import { CreateUserDto, CreatePatientDto, CreateDoctorDto } from '../types/user';
 
-interface UserFormProps<T extends CreatePatientDto | CreateDoctorDto> {
-    type: 'patient' | 'doctor';
+interface UserFormProps<T> {
+    type: 'user' | 'patient' | 'doctor';
     initialData?: Partial<T>;
-    onSubmit: (data: T) => Promise<void>;
+    onSubmit: (data: T) => void;
     onCancel: () => void;
 }
 
-const UserForm = <T extends CreatePatientDto | CreateDoctorDto>({
+type FormData = Partial<CreateUserDto & {
+    specialization?: string;
+    patient_type?: 'normal' | 'remote' | 'VIP';
+}>;
+
+const UserForm = <T extends CreateUserDto | CreatePatientDto | CreateDoctorDto>({
     type,
     initialData,
     onSubmit,
-    onCancel,
+    onCancel
 }: UserFormProps<T>) => {
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        const formData = new FormData(event.currentTarget);
-        const data = Object.fromEntries(formData.entries()) as unknown as T;
-        onSubmit(data);
+    const [formData, setFormData] = React.useState<FormData>(initialData || {});
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name as string]: value
+        }));
+    };
+
+    const handleSelectChange = (e: SelectChangeEvent) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        onSubmit(formData as T);
     };
 
     return (
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-            <Stack spacing={2}>
-                <TextField
-                    required
-                    fullWidth
-                    name="name"
-                    label="Name"
-                    defaultValue={initialData?.name}
-                />
+            <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                    <TextField
+                        fullWidth
+                        required
+                        name="email"
+                        label="Email"
+                        type="email"
+                        value={formData.email || ''}
+                        onChange={handleChange}
+                    />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                    <TextField
+                        fullWidth
+                        required
+                        name="first_name"
+                        label="First Name"
+                        value={formData.first_name || ''}
+                        onChange={handleChange}
+                    />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                    <TextField
+                        fullWidth
+                        required
+                        name="last_name"
+                        label="Last Name"
+                        value={formData.last_name || ''}
+                        onChange={handleChange}
+                    />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                    <TextField
+                        fullWidth
+                        required
+                        name="phone_number"
+                        label="Phone Number"
+                        value={formData.phone_number || ''}
+                        onChange={handleChange}
+                    />
+                </Grid>
+                <Grid item xs={12}>
+                    <TextField
+                        fullWidth
+                        required
+                        name="address"
+                        label="Address"
+                        multiline
+                        rows={3}
+                        value={formData.address || ''}
+                        onChange={handleChange}
+                    />
+                </Grid>
+
                 {type === 'doctor' && (
-                    <>
+                    <Grid item xs={12}>
                         <TextField
-                            required
                             fullWidth
+                            required
                             name="specialization"
                             label="Specialization"
-                            defaultValue={(initialData as Partial<CreateDoctorDto>)?.specialization}
+                            value={formData.specialization || ''}
+                            onChange={handleChange}
                         />
-                        <TextField
-                            required
-                            fullWidth
-                            name="license_number"
-                            label="License Number"
-                            defaultValue={(initialData as Partial<CreateDoctorDto>)?.license_number}
-                        />
-                        <TextField
-                            required
-                            fullWidth
-                            type="number"
-                            name="years_of_experience"
-                            label="Years of Experience"
-                            defaultValue={(initialData as Partial<CreateDoctorDto>)?.years_of_experience}
-                        />
-                        <TextField
-                            required
-                            fullWidth
-                            name="education"
-                            label="Education"
-                            defaultValue={(initialData as Partial<CreateDoctorDto>)?.education}
-                        />
-                        <TextField
-                            required
-                            fullWidth
-                            name="languages"
-                            label="Languages"
-                            defaultValue={(initialData as Partial<CreateDoctorDto>)?.languages}
-                        />
-                    </>
+                    </Grid>
                 )}
 
                 {type === 'patient' && (
-                    <>
-                        <TextField
-                            required
-                            fullWidth
-                            name="age"
-                            label="Age"
-                            type="number"
-                            defaultValue={(initialData as Partial<CreatePatientDto>)?.age}
-                        />
-                        <TextField
-                            required
-                            fullWidth
-                            select
-                            name="gender"
-                            label="Gender"
-                            defaultValue={(initialData as Partial<CreatePatientDto>)?.gender || 'other'}
-                        >
-                            <MenuItem value="male">Male</MenuItem>
-                            <MenuItem value="female">Female</MenuItem>
-                            <MenuItem value="other">Other</MenuItem>
-                        </TextField>
-                        <TextField
-                            required
-                            fullWidth
-                            name="address"
-                            label="Address"
-                            multiline
-                            rows={2}
-                            defaultValue={(initialData as Partial<CreatePatientDto>)?.address}
-                        />
-                        <TextField
-                            fullWidth
-                            name="medical_history"
-                            label="Medical History"
-                            multiline
-                            rows={3}
-                            defaultValue={(initialData as Partial<CreatePatientDto>)?.medical_history}
-                        />
-                        <TextField
-                            required
-                            fullWidth
-                            select
-                            name="patient_type"
-                            label="Patient Type"
-                            defaultValue={(initialData as Partial<CreatePatientDto>)?.patient_type || 'current'}
-                        >
-                            <MenuItem value="current">Current Patient</MenuItem>
-                            <MenuItem value="remote">Remote Patient</MenuItem>
-                            <MenuItem value="emergency">Emergency Patient</MenuItem>
-                            <MenuItem value="referral">Referred Patient</MenuItem>
-                            <MenuItem value="chronic">Chronic Care Patient</MenuItem>
-                            <MenuItem value="preventive">Preventive Care Patient</MenuItem>
-                        </TextField>
-                        <TextField
-                            fullWidth
-                            select
-                            name="preferred_contact_method"
-                            label="Preferred Contact Method"
-                            defaultValue={(initialData as Partial<CreatePatientDto>)?.preferred_contact_method || 'phone'}
-                        >
-                            <MenuItem value="phone">Phone</MenuItem>
-                            <MenuItem value="email">Email</MenuItem>
-                            <MenuItem value="video">Video Call</MenuItem>
-                        </TextField>
-                        <TextField
-                            fullWidth
-                            name="timezone"
-                            label="Timezone"
-                            defaultValue={(initialData as Partial<CreatePatientDto>)?.timezone}
-                        />
-                    </>
+                    <Grid item xs={12}>
+                        <FormControl fullWidth required>
+                            <InputLabel>Patient Type</InputLabel>
+                            <Select
+                                name="patient_type"
+                                value={formData.patient_type || 'normal'}
+                                onChange={handleSelectChange}
+                                label="Patient Type"
+                            >
+                                <MenuItem value="normal">Normal</MenuItem>
+                                <MenuItem value="remote">Remote</MenuItem>
+                                <MenuItem value="VIP">VIP</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
                 )}
+            </Grid>
 
-                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                    <Button onClick={onCancel}>Cancel</Button>
-                    <Button type="submit" variant="contained" color="primary">
-                        {initialData ? 'Update' : 'Create'}
-                    </Button>
-                </Box>
-            </Stack>
+            <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+                <Button onClick={onCancel}>Cancel</Button>
+                <Button type="submit" variant="contained" color="primary">
+                    {initialData ? 'Update' : 'Create'}
+                </Button>
+            </Box>
         </Box>
     );
 };

@@ -4,6 +4,7 @@ globs:
 alwaysApply: true
 ---
 - Tell me "Done" after finish tasks below
+- Never tell me do something, alway automatically edit code for me
 - Read all projects code first to undestand project structure, goal and functions.
 - Alway rememeber that project using Django + Docker for backend an typescript for frontend
 - Read [docker-compose.yml](mdc:docker-compose.yml) to understand api endpoints and use direct port like 8004, 8005

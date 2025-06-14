@@ -38,25 +38,7 @@ services:
       retries: 5
       start_period: 30s
 
-  postgres_db:
-    image: postgres:13
-    container_name: postgres_db
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: user_service
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Core Services
+  # Main Healthcare Services
   gateway:
     build: ./gateway
     container_name: gateway
@@ -65,31 +47,11 @@ services:
     volumes:
       - ./gateway/src:/etc/nginx/conf.d
     depends_on:
-      - user_service
       - doctor_service
       - patient-service
       - appointment_service
       - chatbot_service
 
-  user_service:
-    build: ./services/user_service
-    container_name: user_service
-    command: bash -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
-    volumes:
-      - ./services/user_service:/app
-    ports:
-      - "8001:8000"
-    environment:
-      - POSTGRES_DB=user_service
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_HOST=postgres_db
-      - POSTGRES_PORT=5432
-    depends_on:
-      postgres_db:
-        condition: service_healthy
-
-  # Main Healthcare Services
   doctor_service:
     build: ./services/doctor_service
     container_name: doctor_service
@@ -169,4 +131,3 @@ services:
 volumes:
   mysql_data:
   mongodb_data:
-  postgres_data:

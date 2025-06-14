@@ -1,36 +1,54 @@
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from './useAppDispatch';
 import { useAppSelector } from './useAppSelector';
-import { setCredentials, setError, logout } from '../store/slices/authSlice';
+import { setCredentials, setError, setLoading, logout } from '../store/slices/authSlice';
 import { RootState } from '../store';
-import { LoginRequest, AuthResponse } from '../types/auth';
-import { authService } from '../services/authService';
+import { LoginRequest, RegisterRequest, AuthResponse } from '../types/auth';
+import authService from '../services/authService';
 
 export const useAuth = () => {
     const dispatch = useAppDispatch();
-    const navigate = useNavigate();
-    const { isAuthenticated, loading } = useAppSelector((state: RootState) => state.auth);
+    const { user, isAuthenticated, loading, error } = useAppSelector((state: RootState) => state.auth);
 
-    const login = useCallback(async (credentials: LoginRequest) => {
+    const login = useCallback(async (data: LoginRequest) => {
         try {
-            const response = await authService.login(credentials);
+            dispatch(setLoading(true));
+            const response = await authService.login(data);
             dispatch(setCredentials(response));
-            navigate('/dashboard');
+            return response;
         } catch (error: any) {
-            dispatch(setError(error.response?.data?.error || 'Login failed'));
+            dispatch(setError(error.response?.data?.message || 'Login failed'));
+            throw error;
+        } finally {
+            dispatch(setLoading(false));
         }
-    }, [dispatch, navigate]);
+    }, [dispatch]);
+
+    const register = useCallback(async (data: RegisterRequest) => {
+        try {
+            dispatch(setLoading(true));
+            const response = await authService.register(data);
+            dispatch(setCredentials(response));
+            return response;
+        } catch (error: any) {
+            dispatch(setError(error.response?.data?.message || 'Registration failed'));
+            throw error;
+        } finally {
+            dispatch(setLoading(false));
+        }
+    }, [dispatch]);
 
     const handleLogout = useCallback(() => {
         dispatch(logout());
-        navigate('/login');
-    }, [dispatch, navigate]);
+    }, [dispatch]);
 
     return {
+        user,
         isAuthenticated,
         loading,
+        error,
         login,
-        logout: handleLogout,
+        register,
+        logout: handleLogout
     };
 }; 

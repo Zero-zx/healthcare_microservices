@@ -19,10 +19,13 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Chip,
+  IconButton,
 } from '@mui/material';
 import axios from 'axios';
 import { Appointment } from '../types/appointment';
 import { Patient, Doctor } from '../types/user';
+import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 
 // Adjusting form values to match backend snake_case expectations
 interface AppointmentFormValues {
@@ -56,6 +59,7 @@ const Appointments: React.FC = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -208,8 +212,47 @@ const Appointments: React.FC = () => {
     },
   });
 
+  const handleEdit = (appointment: Appointment) => {
+    setEditingAppointment(appointment);
+    formik.setValues({
+      patient_id: appointment.patient_id,
+      doctor_id: appointment.doctor_id,
+      date: appointment.date,
+      time: appointment.time,
+      notes: appointment.notes || '',
+      service_type: appointment.service_type,
+      duration: appointment.duration
+    });
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}${id}/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        withCredentials: true
+      });
+      
+      // Refresh appointments list
+      const appointmentsResponse = await axios.get(API_URL, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        withCredentials: true
+      });
+      const appointmentsData = appointmentsResponse.data.results || appointmentsResponse.data;
+      setAppointments(appointmentsData);
+    } catch (error) {
+      console.error('Error deleting appointment:', error);
+    }
+  };
+
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ mt: 4, mb: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
           Schedule Appointment
@@ -229,7 +272,7 @@ const Appointments: React.FC = () => {
                     label="Patient"
                   >
                     {patients.map((patient) => (
-                      <MenuItem key={patient.user_id} value={patient.user_id}>
+                      <MenuItem key={patient.id} value={patient.id}>
                         {patient.name}
                       </MenuItem>
                     ))}
@@ -253,7 +296,7 @@ const Appointments: React.FC = () => {
                     label="Doctor"
                   >
                     {doctors.map((doctor) => (
-                      <MenuItem key={doctor.user_id} value={doctor.user_id}>
+                      <MenuItem key={doctor.id} value={doctor.id}>
                         {doctor.name}
                       </MenuItem>
                     ))}
@@ -355,72 +398,75 @@ const Appointments: React.FC = () => {
           Appointment History
         </Typography>
         <Paper sx={{ p: 3 }}>
-          <TableContainer>
+          <TableContainer component={Paper}>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Patient Name</TableCell>
-                  <TableCell>Patient Info</TableCell>
-                  <TableCell>Doctor Name</TableCell>
-                  <TableCell>Doctor Info</TableCell>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Time</TableCell>
-                  <TableCell>Service</TableCell>
-                  <TableCell>Duration</TableCell>
+                  <TableCell>Patient</TableCell>
+                  <TableCell>Patient Details</TableCell>
+                  <TableCell>Doctor</TableCell>
+                  <TableCell>Doctor Details</TableCell>
+                  <TableCell>Date & Time</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {Array.isArray(appointments) ? (
-                  appointments.map((appointment) => {
-                    console.log('Processing appointment:', appointment);
-                    const patient = patients.find(p => p.user_id === appointment.patient_id);
-                    const doctor = doctors.find(d => d.user_id === appointment.doctor_id);
-                    
-                    console.log('Found patient:', patient);
-                    console.log('Found doctor:', doctor);
-
-                    // Skip appointments with empty IDs
-                    if (!appointment.id) {
-                      console.warn('Skipping appointment with empty ID:', appointment);
-                      return null;
-                    }
-
-                    return (
-                      <TableRow key={appointment.id}>
-                        <TableCell>{patient?.name || 'Unknown Patient'}</TableCell>
-                        <TableCell>
-                          {patient ? (
-                            <>
-                              Age: {patient.age}<br />
-                              {patient.patient_type && `Type: ${patient.patient_type}`}<br />
-                              Phone: {patient.phone}
-                            </>
-                          ) : 'N/A'}
-                        </TableCell>
-                        <TableCell>{doctor?.name || 'Unknown Doctor'}</TableCell>
-                        <TableCell>
-                          {doctor ? (
-                            <>
-                              {doctor.specialization && `Specialization: ${doctor.specialization}`}<br />
-                              {doctor.license_number && `License: ${doctor.license_number}`}<br />
-                              {doctor.years_of_experience && `Experience: ${doctor.years_of_experience} years`}
-                            </>
-                          ) : 'N/A'}
-                        </TableCell>
-                        <TableCell>{appointment.date}</TableCell>
-                        <TableCell>{appointment.time}</TableCell>
-                        <TableCell>{appointment.service_type}</TableCell>
-                        <TableCell>{appointment.duration} min</TableCell>
-                      </TableRow>
-                    );
-                  }).filter(Boolean)
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={8}>
-                      No appointments found or data error.
-                    </TableCell>
-                  </TableRow>
-                )}
+                {appointments.map((appointment) => {
+                  const patient = patients.find(p => p.id === appointment.patient_id);
+                  const doctor = doctors.find(d => d.id === appointment.doctor_id);
+                  
+                  return (
+                    <TableRow key={appointment.id}>
+                      <TableCell>{patient ? patient.name : 'Unknown Patient'}</TableCell>
+                      <TableCell>
+                        {patient ? (
+                          <>
+                            Phone: {patient.phone}<br />
+                            {patient.patient_type && `Type: ${patient.patient_type}`}
+                          </>
+                        ) : 'N/A'}
+                      </TableCell>
+                      <TableCell>{doctor ? doctor.name : 'Unknown Doctor'}</TableCell>
+                      <TableCell>
+                        {doctor ? (
+                          <>
+                            {doctor.specialization && `Specialization: ${doctor.specialization}`}
+                          </>
+                        ) : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(`${appointment.date}T${appointment.time}`).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={appointment.status}
+                          color={
+                            appointment.status === 'confirmed' ? 'primary' :
+                            appointment.status === 'completed' ? 'success' :
+                            appointment.status === 'cancelled' ? 'error' : 'default'
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleEdit(appointment)}
+                          sx={{ mr: 1 }}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleDelete(appointment.id)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>

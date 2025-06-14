@@ -1,6 +1,5 @@
 from rest_framework import serializers
-from .models import Doctor, Schedule, User
-from django.contrib.auth.password_validation import validate_password
+from .models import Doctor, Schedule
 
 class ScheduleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -11,59 +10,75 @@ class ScheduleSerializer(serializers.ModelSerializer):
 class DoctorSerializer(serializers.ModelSerializer):
     schedules = ScheduleSerializer(many=True, read_only=True)
     languages = serializers.CharField(required=True)
-    email = serializers.SerializerMethodField()
 
     class Meta:
         model = Doctor
-        fields = ('id', 'user_id', 'name', 'email', 'specialization', 'license_number', 'years_of_experience',
-                 'education', 'certifications', 'languages', 'schedules', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'user_id', 'email', 'created_at', 'updated_at')
+        fields = ('id', 'email', 'name', 'specialization', 'license_number', 
+                 'years_of_experience', 'education', 'certifications', 'languages', 
+                 'schedules', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at')
         extra_kwargs = {
+            'email': {'required': True},
+            'name': {'required': True},
             'specialization': {'required': True},
             'license_number': {'required': True},
-            'years_of_experience': {'required': True, 'min_value': 0},
+            'years_of_experience': {'required': True},
             'education': {'required': True},
             'languages': {'required': True}
         }
 
-    def get_email(self, obj):
-        try:
-            user = User.objects.get(id=obj.user_id)
-            return user.email
-        except User.DoesNotExist:
-            return None
-
     def validate_languages(self, value):
         if isinstance(value, list):
-            return ', '.join(value)
+            return ','.join(value)
         return value
 
-class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
-    specialization = serializers.CharField(required=True)
-    license_number = serializers.CharField(required=True)
-    years_of_experience = serializers.IntegerField(required=True)
-    education = serializers.CharField(required=True)
-    languages = serializers.CharField(required=True)
+    def validate_email(self, value):
+        if Doctor.objects.filter(email=value).exists():
+            raise serializers.ValidationError("This email is already in use.")
+        return value
 
-    class Meta:
-        model = User
-        fields = ('email', 'password', 'username', 'role', 'specialization', 
-                 'license_number', 'years_of_experience', 'education', 'languages')
-        extra_kwargs = {
-            'password': {'write_only': True},
-            'role': {'default': 'doctor'}
-        }
+    def validate_name(self, value):
+        if len(value) < 2:
+            raise serializers.ValidationError("Name must be at least 2 characters long.")
+        return value
+
+    def validate_specialization(self, value):
+        if len(value) < 2:
+            raise serializers.ValidationError("Specialization must be at least 2 characters long.")
+        return value
+
+    def validate_license_number(self, value):
+        if len(value) < 2:
+            raise serializers.ValidationError("License number must be at least 2 characters long.")
+        return value
+
+    def validate_years_of_experience(self, value):
+        if value < 0:
+            raise serializers.ValidationError("Years of experience must be a non-negative number.")
+        return value
+
+    def validate_education(self, value):
+        if len(value) < 2:
+            raise serializers.ValidationError("Education must be at least 2 characters long.")
+        return value
+
+    def validate_certifications(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Certifications must be a list.")
+        return value
+
+    def validate(self, attrs):
+        if attrs['years_of_experience'] > 100:
+            raise serializers.ValidationError("Years of experience cannot exceed 100.")
+        return attrs
 
     def create(self, validated_data):
-        user = User.objects.create_user(
-            email=validated_data['email'],
-            username=validated_data['username'],
-            password=validated_data['password'],
-            role='doctor'
-        )
-        return user
+        doctor = Doctor.objects.create(**validated_data)
+        return doctor
 
-class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    password = serializers.CharField(write_only=True) 
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            if attr != 'email':
+                setattr(instance, attr, value)
+        instance.save()
+        return instance 

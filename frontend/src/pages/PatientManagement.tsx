@@ -1,11 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     Button,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    IconButton,
+    Container,
     Paper,
     Table,
     TableBody,
@@ -14,161 +11,165 @@ import {
     TableHead,
     TableRow,
     Typography,
-    Avatar,
-    Skeleton,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    SelectChangeEvent
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { Patient, CreatePatientDto } from '../types/user';
-import { patientService } from '../services/userService';
-import UserForm from '../components/UserForm';
-import PersonIcon from '@mui/icons-material/Person';
+import patientService from '../services/patientService';
+import { Patient, CreatePatientDto, UpdatePatientDto } from '../types/user';
+import { useAppSelector } from '../hooks/useAppSelector';
+import { RootState } from '../store';
 
-export const PatientManagement: React.FC = () => {
+const PatientManagement: React.FC = () => {
     const [patients, setPatients] = useState<Patient[]>([]);
-    const [openDialog, setOpenDialog] = useState(false);
+    const [open, setOpen] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [formData, setFormData] = useState<Partial<CreatePatientDto>>({
+        email: '',
+        name: '',
+        age: 0,
+        gender: 'male',
+        phone: '',
+        address: '',
+        patient_type: 'normal'
+    });
 
-    const fetchPatients = async () => {
-        try {
-            setLoading(true);
-            const data = await patientService.getAll();
-            console.log('Patients Data:', JSON.stringify(data, null, 2));
-            setPatients(data);
-            setError(null);
-        } catch (err) {
-            setError('Failed to fetch patients');
-            console.error('Error fetching patients:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const { access } = useAppSelector((state: RootState) => state.auth);
+    const token = access || 'mock-access-token';
 
     useEffect(() => {
-        fetchPatients();
+        loadPatients();
     }, []);
 
-    const handleCreate = async (data: CreatePatientDto) => {
+    const loadPatients = async () => {
         try {
-            await patientService.create(data);
-            setOpenDialog(false);
-            fetchPatients();
-        } catch (err) {
-            setError('Failed to create patient');
-            console.error('Error creating patient:', err);
+            const data = await patientService.getAll(token);
+            setPatients(data);
+        } catch (error) {
+            console.error('Error loading patients:', error);
         }
     };
 
-    const handleUpdate = async (data: CreatePatientDto) => {
-        if (!selectedPatient) return;
-        try {
-            await patientService.update(selectedPatient.user_id, data);
-            setOpenDialog(false);
+    const handleOpen = (patient?: Patient) => {
+        if (patient) {
+            setSelectedPatient(patient);
+            setFormData({
+                email: patient.email,
+                name: patient.name,
+                age: patient.age,
+                gender: patient.gender,
+                phone: patient.phone,
+                address: patient.address,
+                patient_type: patient.patient_type,
+                medical_history: patient.medical_history,
+                preferred_contact_method: patient.preferred_contact_method,
+                timezone: patient.timezone
+            });
+        } else {
             setSelectedPatient(null);
-            fetchPatients();
-        } catch (err) {
-            setError('Failed to update patient');
-            console.error('Error updating patient:', err);
+            setFormData({
+                email: '',
+                name: '',
+                age: 0,
+                gender: 'male',
+                phone: '',
+                address: '',
+                patient_type: 'normal'
+            });
+        }
+        setOpen(true);
+    };
+
+    const handleClose = () => {
+        setOpen(false);
+        setSelectedPatient(null);
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }> | SelectChangeEvent) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name as string]: value
+        }));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            if (selectedPatient) {
+                await patientService.update(selectedPatient.id, formData as UpdatePatientDto, token);
+            } else {
+                await patientService.create(formData as CreatePatientDto, token);
+            }
+            handleClose();
+            loadPatients();
+        } catch (error) {
+            console.error('Error saving patient:', error);
         }
     };
 
     const handleDelete = async (id: string) => {
-        if (!window.confirm('Are you sure you want to delete this patient?')) return;
-        try {
-            await patientService.delete(id);
-            fetchPatients();
-        } catch (err) {
-            setError('Failed to delete patient');
-            console.error('Error deleting patient:', err);
+        if (window.confirm('Are you sure you want to delete this patient?')) {
+            try {
+                await patientService.delete(id, token);
+                loadPatients();
+            } catch (error) {
+                console.error('Error deleting patient:', error);
+            }
         }
     };
 
-    const handleEdit = (patient: Patient) => {
-        setSelectedPatient(patient);
-        setOpenDialog(true);
-    };
-
-    const handleCloseDialog = () => {
-        setOpenDialog(false);
-        setSelectedPatient(null);
-    };
-
-    if (loading) {
-        return (
-            <Box sx={{ p: 3 }}>
-                <Skeleton variant="rectangular" width="100%" height={60} sx={{ mb: 2, borderRadius: 3 }} />
-                <Skeleton variant="rectangular" width="100%" height={400} sx={{ borderRadius: 3 }} />
-            </Box>
-        );
-    }
-
-    if (error) {
-        return <Typography color="error">{error}</Typography>;
-    }
-
     return (
-        <Box sx={{ p: { xs: 1, sm: 3 } }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4" fontWeight={700} color="primary.main">Patient Management</Typography>
-                <Button
-                    variant="contained"
-                    size="large"
-                    startIcon={<AddIcon />}
-                    onClick={() => setOpenDialog(true)}
-                    sx={{ borderRadius: 3, fontWeight: 600 }}
-                >
+        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h4" component="h1">
+                    Patient Management
+                </Typography>
+                <Button variant="contained" color="primary" onClick={() => handleOpen()}>
                     Add Patient
                 </Button>
             </Box>
 
-            <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 4, p: 2 }}>
+            <TableContainer component={Paper}>
                 <Table>
                     <TableHead>
-                        <TableRow sx={{ background: 'linear-gradient(90deg, #e3f2fd 0%, #fce4ec 100%)' }}>
-                            <TableCell></TableCell>
+                        <TableRow>
                             <TableCell>Name</TableCell>
-                            <TableCell>Age</TableCell>
-                            <TableCell>Gender</TableCell>
+                            <TableCell>Email</TableCell>
                             <TableCell>Phone</TableCell>
-                            <TableCell>Address</TableCell>
-                            <TableCell>Medical History</TableCell>
-                            <TableCell>Patient Type</TableCell>
-                            <TableCell>Preferred Contact</TableCell>
-                            <TableCell>Timezone</TableCell>
+                            <TableCell>Type</TableCell>
                             <TableCell>Actions</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {patients.map((patient) => (
-                            <TableRow key={patient.user_id} hover sx={{ transition: 'background 0.2s', '&:hover': { background: 'primary.light', cursor: 'pointer' } }}>
-                                <TableCell>
-                                    <Avatar sx={{ bgcolor: 'primary.main' }}>
-                                        <PersonIcon />
-                                    </Avatar>
-                                </TableCell>
+                            <TableRow key={patient.id}>
                                 <TableCell>{patient.name}</TableCell>
-                                <TableCell>{patient.age}</TableCell>
-                                <TableCell>{patient.gender}</TableCell>
+                                <TableCell>{patient.email}</TableCell>
                                 <TableCell>{patient.phone}</TableCell>
-                                <TableCell>{patient.address}</TableCell>
-                                <TableCell>{patient.medical_history || '-'}</TableCell>
                                 <TableCell>{patient.patient_type}</TableCell>
-                                <TableCell>{patient.preferred_contact_method || '-'}</TableCell>
-                                <TableCell>{patient.timezone || '-'}</TableCell>
                                 <TableCell>
-                                    <IconButton
-                                        color="primary"
-                                        onClick={() => handleEdit(patient)}
+                                    <Button
+                                        size="small"
+                                        onClick={() => handleOpen(patient)}
+                                        sx={{ mr: 1 }}
                                     >
-                                        <EditIcon />
-                                    </IconButton>
-                                    <IconButton
+                                        Edit
+                                    </Button>
+                                    <Button
+                                        size="small"
                                         color="error"
-                                        onClick={() => handleDelete(patient.user_id)}
+                                        onClick={() => handleDelete(patient.id)}
                                     >
-                                        <DeleteIcon />
-                                    </IconButton>
+                                        Delete
+                                    </Button>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -176,29 +177,130 @@ export const PatientManagement: React.FC = () => {
                 </Table>
             </TableContainer>
 
-            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
-                <DialogTitle sx={{ fontWeight: 700, color: 'primary.main' }}>
-                    {selectedPatient ? 'Edit Patient' : 'Add New Patient'}
+            <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+                <DialogTitle>
+                    {selectedPatient ? 'Edit Patient' : 'Add Patient'}
                 </DialogTitle>
-                <DialogContent sx={{ p: 2, borderRadius: 2 }}>
-                    <UserForm
-                        type="patient"
-                        initialData={selectedPatient ? {
-                            name: selectedPatient.name,
-                            age: selectedPatient.age,
-                            gender: selectedPatient.gender,
-                            phone: selectedPatient.phone,
-                            address: selectedPatient.address,
-                            medical_history: selectedPatient.medical_history || undefined,
-                            patient_type: selectedPatient.patient_type,
-                            preferred_contact_method: selectedPatient.preferred_contact_method || undefined,
-                            timezone: selectedPatient.timezone || undefined
-                        } : undefined}
-                        onSubmit={selectedPatient ? handleUpdate : handleCreate}
-                        onCancel={handleCloseDialog}
-                    />
+                <DialogContent>
+                    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+                        <TextField
+                            fullWidth
+                            label="Email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            margin="normal"
+                            required
+                        />
+                        <TextField
+                            fullWidth
+                            label="Name"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            margin="normal"
+                            required
+                        />
+                        <TextField
+                            fullWidth
+                            label="Age"
+                            name="age"
+                            type="number"
+                            value={formData.age}
+                            onChange={handleChange}
+                            margin="normal"
+                            required
+                        />
+                        <FormControl fullWidth margin="normal">
+                            <InputLabel>Gender</InputLabel>
+                            <Select
+                                name="gender"
+                                value={formData.gender}
+                                onChange={handleChange}
+                                label="Gender"
+                                required
+                            >
+                                <MenuItem value="male">Male</MenuItem>
+                                <MenuItem value="female">Female</MenuItem>
+                                <MenuItem value="other">Other</MenuItem>
+                            </Select>
+                        </FormControl>
+                        <TextField
+                            fullWidth
+                            label="Phone"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleChange}
+                            margin="normal"
+                            required
+                        />
+                        <TextField
+                            fullWidth
+                            label="Address"
+                            name="address"
+                            value={formData.address}
+                            onChange={handleChange}
+                            margin="normal"
+                            required
+                            multiline
+                            rows={3}
+                        />
+                        <TextField
+                            fullWidth
+                            label="Medical History"
+                            name="medical_history"
+                            value={formData.medical_history}
+                            onChange={handleChange}
+                            margin="normal"
+                            multiline
+                            rows={3}
+                        />
+                        <FormControl fullWidth margin="normal">
+                            <InputLabel>Patient Type</InputLabel>
+                            <Select
+                                name="patient_type"
+                                value={formData.patient_type}
+                                onChange={handleChange}
+                                label="Patient Type"
+                                required
+                            >
+                                <MenuItem value="normal">Normal</MenuItem>
+                                <MenuItem value="remote">Remote</MenuItem>
+                                <MenuItem value="vip">VIP</MenuItem>
+                            </Select>
+                        </FormControl>
+                        <FormControl fullWidth margin="normal">
+                            <InputLabel>Preferred Contact Method</InputLabel>
+                            <Select
+                                name="preferred_contact_method"
+                                value={formData.preferred_contact_method}
+                                onChange={handleChange}
+                                label="Preferred Contact Method"
+                            >
+                                <MenuItem value="phone">Phone</MenuItem>
+                                <MenuItem value="email">Email</MenuItem>
+                                <MenuItem value="video">Video Call</MenuItem>
+                            </Select>
+                        </FormControl>
+                        <TextField
+                            fullWidth
+                            label="Timezone"
+                            name="timezone"
+                            value={formData.timezone}
+                            onChange={handleChange}
+                            margin="normal"
+                        />
+                    </Box>
                 </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleClose}>Cancel</Button>
+                    <Button onClick={handleSubmit} variant="contained" color="primary">
+                        {selectedPatient ? 'Update' : 'Create'}
+                    </Button>
+                </DialogActions>
             </Dialog>
-        </Box>
+        </Container>
     );
-}; 
+};
+
+export default PatientManagement; 

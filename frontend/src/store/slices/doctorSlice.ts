@@ -24,13 +24,13 @@ const doctorSlice = createSlice({
       state.doctors.push(action.payload);
     },
     updateDoctor: (state, action: PayloadAction<Doctor>) => {
-      const index = state.doctors.findIndex(doctor => doctor.user_id === action.payload.user_id);
+      const index = state.doctors.findIndex(doctor => doctor.id === action.payload.id);
       if (index !== -1) {
         state.doctors[index] = action.payload;
       }
     },
     deleteDoctor: (state, action: PayloadAction<string>) => {
-      state.doctors = state.doctors.filter(doctor => doctor.user_id !== action.payload);
+      state.doctors = state.doctors.filter(doctor => doctor.id !== action.payload);
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;

@@ -17,6 +17,7 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import SendIcon from '@mui/icons-material/Send';
 import PersonIcon from '@mui/icons-material/Person';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
+import axios from 'axios';
 
 interface Message {
   sender: 'user' | 'bot';
@@ -24,7 +25,7 @@ interface Message {
   answer?: string; // chỉ dùng cho user trả lời Có/Không
 }
 
-const API_URL = 'http://localhost:8008/api/chat/';
+const API_URL = 'http://localhost:8000/api/chatbot/chat/';
 const NOT_FOUND_SYMPTOM = 'Tôi chưa từng nghe triệu chứng đó, bạn còn gặp triệu chứng nào khác không?';
 
 function speak(text: string) {
@@ -42,24 +43,29 @@ const Chatbot: React.FC = () => {
   const lastBotMsgRef = useRef<string | null>(null);
 
   // Gửi hội thoại lên backend
-  const sendMessage = async (msg?: Message, questionText?: string, answer?: string) => {
+  const sendMessage = async (msg?: Message, answerToBotQuestion?: string) => {
     let history = [...messages];
     if (msg) {
       history = [...messages, msg];
     }
-    // Nếu là trả lời Có/Không, gửi thêm object có answer cho backend
-    if (questionText && answer) {
-      history = [...messages, { sender: 'user', text: questionText, answer }];
-    }
+    // Nếu là trả lời Có/Không, chỉ gửi answer cho backend, không thêm lại câu hỏi bot vào lịch sử user
     setWaiting(true);
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ history }),
+        body: JSON.stringify({ 
+          message: msg?.text || (answerToBotQuestion ? answerToBotQuestion : ''),
+          session_id: 'anonymous',
+          history: history.map(msg => ({
+            sender: msg.sender,
+            text: msg.text,
+            answer: msg.answer
+          }))
+        }),
       });
       const data = await res.json();
-      setMessages([...history, { sender: 'bot', text: data.reply }]);
+      setMessages([...history, { sender: 'bot', text: data.response }]);
       setWaiting(false);
     } catch (e) {
       setMessages([...history, { sender: 'bot', text: 'Lỗi kết nối server.' }]);
@@ -67,27 +73,19 @@ const Chatbot: React.FC = () => {
     }
   };
 
-  // Xử lý gửi triệu chứng đầu tiên
-  const handleSend = () => {
-    if (!input.trim()) return;
-    if (
-      messages.length === 0 ||
-      (messages.length > 0 && messages[messages.length - 1].sender === 'bot' &&
-        (messages[messages.length - 1].text === 'Triệu chứng bạn gặp phải là gì?' ||
-         messages[messages.length - 1].text === NOT_FOUND_SYMPTOM))
-    ) {
-      sendMessage({ sender: 'user', text: input.trim() });
-      setInput('');
-      inputRef.current?.focus();
-    }
+  // Xử lý gửi triệu chứng đầu tiên hoặc gửi text bất kỳ
+  const handleSend = async (customText?: string) => {
+    const textToSend = customText !== undefined ? customText : input;
+    if (!textToSend.trim()) return;
+    const userMessage: Message = { text: textToSend, sender: 'user' };
+    setInput('');
+    setMessages((prev) => [...prev, userMessage]);
+    await sendMessage(userMessage);
   };
 
   // Xử lý trả lời Có/Không cho các câu hỏi bot
   const handleAnswer = (answer: string) => {
-    const lastBotMsg = messages[messages.length - 1];
-    if (!lastBotMsg || lastBotMsg.sender !== 'bot') return;
-    // Không hiển thị lại tin nhắn user, chỉ gửi cho backend
-    sendMessage(undefined, lastBotMsg.text, answer);
+    handleSend(answer);
   };
 
   // Khi load lần đầu, tự động hỏi triệu chứng
@@ -128,6 +126,13 @@ const Chatbot: React.FC = () => {
     messages[messages.length - 1].sender === 'bot' &&
     messages[messages.length - 1].text === NOT_FOUND_SYMPTOM;
 
+  // Kiểm tra xem có phải câu hỏi Yes/No không
+  const isYesNoQuestion =
+    messages.length > 0 &&
+    messages[messages.length - 1].sender === 'bot' &&
+    messages[messages.length - 1].text &&
+    messages[messages.length - 1].text.startsWith('Bạn có bị');
+
   // Hàm reset hội thoại
   const handleReset = () => {
     setMessages([]);
@@ -139,10 +144,9 @@ const Chatbot: React.FC = () => {
   // Khi messages rỗng (sau reset), tự động gửi lại câu hỏi đầu tiên
   useEffect(() => {
     if (messages.length === 0 && !waiting) {
-      sendMessage({ sender: 'user', text: '' });
+      setMessages([{ sender: 'bot', text: 'Triệu chứng bạn gặp phải là gì?' }]);
     }
-    // eslint-disable-next-line
-  }, [messages]);
+  }, [messages, waiting]);
 
   return (
     <Box maxWidth={480} mx="auto" mt={6}>
@@ -203,8 +207,8 @@ const Chatbot: React.FC = () => {
             </Box>
           )}
         </Box>
-        {/* Nếu bot vừa hỏi "Bạn có bị ... không?" thì hiện nút Có/Không */}
-        {messages.length > 0 && messages[messages.length - 1].sender === 'bot' && messages[messages.length - 1].text.startsWith('Bạn có bị') && (
+        {/* Hiển thị nút Có/Không nếu là câu hỏi Yes/No */}
+        {isYesNoQuestion && (
           <Stack direction="row" spacing={2} justifyContent="center" sx={{ p: 2 }}>
             <Button variant="contained" color="success" size="large" onClick={() => handleAnswer('có')} disabled={waiting} sx={{ borderRadius: 3, minWidth: 100 }}>
               Có
@@ -214,15 +218,15 @@ const Chatbot: React.FC = () => {
             </Button>
           </Stack>
         )}
-        {/* Chỉ hiển thị input nhập tự do ở câu hỏi đầu tiên hoặc khi không nhận diện được triệu chứng */}
-        {(isFirstBotQuestion || isNotFoundSymptom) && (
+        {/* Hiển thị input text trong mọi trường hợp, trừ khi đang hiển thị nút Có/Không */}
+        {!isYesNoQuestion && (
           <Box sx={{ display: 'flex', gap: 1, p: 2, borderTop: '1px solid #eee', background: '#fff' }}>
             <TextField
               inputRef={inputRef}
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSend()}
-              placeholder="Nhập triệu chứng..."
+              placeholder={isFirstBotQuestion ? "Nhập triệu chứng..." : "Nhập tin nhắn..."}
               disabled={waiting}
               fullWidth
               size="small"
@@ -232,7 +236,7 @@ const Chatbot: React.FC = () => {
               variant="contained"
               color="primary"
               endIcon={<SendIcon />}
-              onClick={handleSend}
+              onClick={() => handleSend()}
               disabled={waiting || !input.trim()}
               sx={{ borderRadius: 3, minWidth: 48 }}
             >

@@ -1,47 +1,88 @@
-export interface Patient {
+export interface User {
     id: string;
-    user_id: string;
-    name: string;
-    age: number;
-    gender: 'male' | 'female' | 'other';
-    phone: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    phone_number: string;
     address: string;
-    medical_history?: string | null;
-    patient_type: 'current' | 'remote' | 'emergency' | 'referral' | 'chronic' | 'preventive';
-    preferred_contact_method?: 'phone' | 'email' | 'video' | null;
-    timezone?: string | null;
     created_at: string;
     updated_at: string;
 }
 
-export interface Doctor {
+export interface CreateUserDto {
+    email: string;
+    first_name: string;
+    last_name: string;
+    phone_number: string;
+    address: string;
+}
+
+export interface UpdateUserDto {
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+    phone_number?: string;
+    address?: string;
+}
+
+export interface Patient {
     id: string;
-    user_id: string;
-    name?: string;
-    specialization: string;
-    license_number: string;
-    years_of_experience: number;
-    education: string;
-    certifications?: string | null;
-    languages: string;
-    schedules?: any[];
+    email: string;
+    name: string;
+    age: number;
+    gender: string;
+    phone: string;
+    address: string;
+    medical_history?: string;
+    patient_type: 'normal' | 'remote' | 'vip';
+    preferred_contact_method?: 'phone' | 'email' | 'video';
+    timezone?: string;
     created_at: string;
     updated_at: string;
 }
 
 export interface CreatePatientDto {
+    email: string;
     name: string;
     age: number;
-    gender: 'male' | 'female' | 'other';
+    gender: string;
     phone: string;
     address: string;
     medical_history?: string;
-    patient_type: 'current' | 'remote' | 'emergency' | 'referral' | 'chronic' | 'preventive';
+    patient_type: 'normal' | 'remote' | 'vip';
     preferred_contact_method?: 'phone' | 'email' | 'video';
     timezone?: string;
 }
 
+export interface UpdatePatientDto {
+    email?: string;
+    name?: string;
+    age?: number;
+    gender?: string;
+    phone?: string;
+    address?: string;
+    medical_history?: string;
+    patient_type?: 'normal' | 'remote' | 'vip';
+    preferred_contact_method?: 'phone' | 'email' | 'video';
+    timezone?: string;
+}
+
+export interface Doctor {
+    id: string;
+    email: string;
+    name: string;
+    specialization: string;
+    license_number: string;
+    years_of_experience: number;
+    education: string;
+    certifications?: string;
+    languages: string;
+    created_at: string;
+    updated_at: string;
+}
+
 export interface CreateDoctorDto {
+    email: string;
     name: string;
     specialization: string;
     license_number: string;
@@ -51,5 +92,13 @@ export interface CreateDoctorDto {
     languages: string;
 }
 
-export interface UpdatePatientDto extends Partial<CreatePatientDto> {}
-export interface UpdateDoctorDto extends Partial<CreateDoctorDto> {} 
+export interface UpdateDoctorDto {
+    email?: string;
+    name?: string;
+    specialization?: string;
+    license_number?: string;
+    years_of_experience?: number;
+    education?: string;
+    certifications?: string;
+    languages?: string;
+} 

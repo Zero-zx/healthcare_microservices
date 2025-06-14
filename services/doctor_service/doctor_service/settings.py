@@ -9,9 +9,6 @@ SECRET_KEY = 'your-secret-key'
 DEBUG = True
 ALLOWED_HOSTS = ['*', 'doctor_service', 'doctor_service:8000', 'localhost', '127.0.0.1']
 
-# Custom user model
-AUTH_USER_MODEL = 'doctor.User'
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -137,11 +134,4 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.AllowAny',
     ),
-}
-
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': False,
-    'BLACKLIST_AFTER_ROTATION': True,
 }

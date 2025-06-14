@@ -1,11 +1,20 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { AuthState, User } from '../../types/auth';
 
+const mockUser: User = {
+    id: '1',
+    email: 'admin@example.com',
+    role: 'admin',
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+};
+
 const initialState: AuthState = {
-    user: null,
-    access: localStorage.getItem('access'),
-    refresh: localStorage.getItem('refresh'),
-    isAuthenticated: !!localStorage.getItem('access'),
+    user: mockUser,
+    access: 'mock-access-token',
+    refresh: 'mock-refresh-token',
+    isAuthenticated: true,
     loading: false,
     error: null
 };
@@ -28,10 +37,10 @@ const authSlice = createSlice({
             state.error = action.payload;
         },
         logout: (state) => {
-            state.user = null;
-            state.access = null;
-            state.refresh = null;
-            state.isAuthenticated = false;
+            state.user = mockUser;
+            state.access = 'mock-access-token';
+            state.refresh = 'mock-refresh-token';
+            state.isAuthenticated = true;
             state.error = null;
         }
     }
