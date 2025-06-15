@@ -96,10 +96,14 @@ const Chatbot: React.FC = () => {
     // eslint-disable-next-line
   }, []);
 
-  // Tự động scroll xuống cuối khi có tin nhắn mới
+  // Auto scroll to bottom when new message arrives
   useEffect(() => {
     if (chatBodyRef.current) {
-      chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+      const scrollOptions = {
+        top: chatBodyRef.current.scrollHeight,
+        behavior: 'smooth' as const
+      };
+      chatBodyRef.current.scrollTo(scrollOptions);
     }
   }, [messages]);
 
@@ -149,7 +153,7 @@ const Chatbot: React.FC = () => {
   }, [messages, waiting]);
 
   return (
-    <Box maxWidth={480} mx="auto" mt={6}>
+    <Box maxWidth={2000} mx="auto" mt={6} maxHeight={1500}>
       <Paper elevation={6} sx={{ borderRadius: 2, overflow: 'hidden', boxShadow: 8, p: 0 }}>
         <AppBar position="static" color="primary" elevation={0} sx={{ borderRadius: 0, background: 'linear-gradient(90deg, #1976d2 0%, #ff4081 100%)', boxShadow: 'none' }}>
           <Toolbar variant="dense" sx={{ minHeight: 48 }}>
@@ -162,88 +166,101 @@ const Chatbot: React.FC = () => {
             </IconButton>
           </Toolbar>
         </AppBar>
-        <Box ref={chatBodyRef} sx={{
-          minHeight: 320,
-          maxHeight: 400,
-          overflowY: 'auto',
-          background: 'linear-gradient(135deg, #e3f2fd 0%, #fce4ec 100%)',
-          px: 2, py: 2,
-          display: 'flex', flexDirection: 'column', gap: 1.5
-        }}>
-          {messages.map((msg, idx) => (
-            <Fade in key={idx} timeout={400}>
-              <Box display="flex" justifyContent={msg.sender === 'user' ? 'flex-end' : 'flex-start'} alignItems="flex-end">
-                {msg.sender === 'bot' && (
-                  <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32, mr: 1 }}>
-                    <SmartToyIcon fontSize="small" />
-                  </Avatar>
-                )}
-                <Box
-                  sx={{
-                    bgcolor: msg.sender === 'user' ? 'primary.light' : 'grey.100',
-                    color: 'text.primary',
-                    px: 2,
-                    py: 1,
-                    borderRadius: 3,
-                    maxWidth: 280,
-                    boxShadow: 1,
-                    fontSize: 16,
-                    wordBreak: 'break-word',
-                  }}
-                >
-                  {msg.text}
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            width: '100%',
+            height: '600px',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
+          }}
+        >
+          <Box ref={chatBodyRef} sx={{
+            flex: 1,
+            overflowY: 'auto',
+            background: 'linear-gradient(135deg, #e3f2fd 0%, #fce4ec 100%)',
+            px: 2, py: 2,
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: 1.5,
+            scrollBehavior: 'smooth'
+          }}>
+            {messages.map((msg, idx) => (
+              <Fade in key={idx} timeout={400}>
+                <Box display="flex" justifyContent={msg.sender === 'user' ? 'flex-end' : 'flex-start'} alignItems="flex-end">
+                  {msg.sender === 'bot' && (
+                    <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32, mr: 1 }}>
+                      <SmartToyIcon fontSize="small" />
+                    </Avatar>
+                  )}
+                  <Box
+                    sx={{
+                      bgcolor: msg.sender === 'user' ? 'primary.light' : 'grey.100',
+                      color: 'text.primary',
+                      px: 2,
+                      py: 1,
+                      borderRadius: 3,
+                      maxWidth: 280,
+                      boxShadow: 1,
+                      fontSize: 16,
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {msg.text}
+                  </Box>
+                  {msg.sender === 'user' && (
+                    <Avatar sx={{ bgcolor: 'secondary.main', width: 32, height: 32, ml: 1 }}>
+                      <PersonIcon fontSize="small" />
+                    </Avatar>
+                  )}
                 </Box>
-                {msg.sender === 'user' && (
-                  <Avatar sx={{ bgcolor: 'secondary.main', width: 32, height: 32, ml: 1 }}>
-                    <PersonIcon fontSize="small" />
-                  </Avatar>
-                )}
+              </Fade>
+            ))}
+            {waiting && (
+              <Box display="flex" justifyContent="center" alignItems="center" mt={1}>
+                <CircularProgress size={24} color="primary" />
               </Box>
-            </Fade>
-          ))}
-          {waiting && (
-            <Box display="flex" justifyContent="center" alignItems="center" mt={1}>
-              <CircularProgress size={24} color="primary" />
+            )}
+          </Box>
+          {/* Hiển thị nút Có/Không nếu là câu hỏi Yes/No */}
+          {isYesNoQuestion && (
+            <Stack direction="row" spacing={2} justifyContent="center" sx={{ p: 2 }}>
+              <Button variant="contained" color="success" size="large" onClick={() => handleAnswer('có')} disabled={waiting} sx={{ borderRadius: 3, minWidth: 100 }}>
+                Có
+              </Button>
+              <Button variant="contained" color="error" size="large" onClick={() => handleAnswer('không')} disabled={waiting} sx={{ borderRadius: 3, minWidth: 100 }}>
+                Không
+              </Button>
+            </Stack>
+          )}
+          {/* Hiển thị input text trong mọi trường hợp, trừ khi đang hiển thị nút Có/Không */}
+          {!isYesNoQuestion && (
+            <Box sx={{ display: 'flex', gap: 1, p: 2, borderTop: '1px solid #eee', background: '#fff' }}>
+              <TextField
+                inputRef={inputRef}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSend()}
+                placeholder={isFirstBotQuestion ? "Nhập triệu chứng..." : "Nhập tin nhắn..."}
+                disabled={waiting}
+                fullWidth
+                size="small"
+                sx={{ borderRadius: 3, bgcolor: 'grey.50' }}
+              />
+              <Button
+                variant="contained"
+                color="primary"
+                endIcon={<SendIcon />}
+                onClick={() => handleSend()}
+                disabled={waiting || !input.trim()}
+                sx={{ borderRadius: 3, minWidth: 48 }}
+              >
+                Gửi
+              </Button>
             </Box>
           )}
-        </Box>
-        {/* Hiển thị nút Có/Không nếu là câu hỏi Yes/No */}
-        {isYesNoQuestion && (
-          <Stack direction="row" spacing={2} justifyContent="center" sx={{ p: 2 }}>
-            <Button variant="contained" color="success" size="large" onClick={() => handleAnswer('có')} disabled={waiting} sx={{ borderRadius: 3, minWidth: 100 }}>
-              Có
-            </Button>
-            <Button variant="contained" color="error" size="large" onClick={() => handleAnswer('không')} disabled={waiting} sx={{ borderRadius: 3, minWidth: 100 }}>
-              Không
-            </Button>
-          </Stack>
-        )}
-        {/* Hiển thị input text trong mọi trường hợp, trừ khi đang hiển thị nút Có/Không */}
-        {!isYesNoQuestion && (
-          <Box sx={{ display: 'flex', gap: 1, p: 2, borderTop: '1px solid #eee', background: '#fff' }}>
-            <TextField
-              inputRef={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSend()}
-              placeholder={isFirstBotQuestion ? "Nhập triệu chứng..." : "Nhập tin nhắn..."}
-              disabled={waiting}
-              fullWidth
-              size="small"
-              sx={{ borderRadius: 3, bgcolor: 'grey.50' }}
-            />
-            <Button
-              variant="contained"
-              color="primary"
-              endIcon={<SendIcon />}
-              onClick={() => handleSend()}
-              disabled={waiting || !input.trim()}
-              sx={{ borderRadius: 3, minWidth: 48 }}
-            >
-              Gửi
-            </Button>
-          </Box>
-        )}
+        </Paper>
       </Paper>
     </Box>
   );

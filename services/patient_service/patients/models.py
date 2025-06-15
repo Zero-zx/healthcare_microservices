@@ -38,3 +38,6 @@ class Patient(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.get_patient_type_display()}" 
+        
+
+

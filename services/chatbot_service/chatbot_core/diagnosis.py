@@ -50,6 +50,15 @@ def get_next_symptom_to_ask(disease: str, asked_symptoms: Set[str]) -> Optional[
     # Ưu tiên các triệu chứng phổ biến hơn
     return max(remaining_symptoms, key=lambda s: len([d for d in KB.values() if s in d['symptoms']]))
 
+def reset_diagnosis_state(state: DiagnosisState) -> None:
+    """Reset trạng thái chẩn đoán về ban đầu"""
+    state.current_disease = None
+    state.asked_symptoms.clear()
+    state.confirmed_symptoms.clear()
+    state.disease_probabilities.clear()
+    state.step = 'initial'
+    state.current_symptom = None
+
 def get_diagnosis_response(state: DiagnosisState) -> Tuple[str, bool]:
     """Tạo câu trả lời dựa trên trạng thái hiện tại"""
     if state.step == 'initial':
@@ -64,6 +73,7 @@ def get_diagnosis_response(state: DiagnosisState) -> Tuple[str, bool]:
             response += f"Điều trị: {info['treatment']}"
             if 'description' in info:
                 response += f"\n\nMô tả: {info['description']}"
+            reset_diagnosis_state(state)  # Reset state sau khi chẩn đoán
             return response, True
     
     # Kiểm tra nếu có bệnh nào > 70%
@@ -75,6 +85,7 @@ def get_diagnosis_response(state: DiagnosisState) -> Tuple[str, bool]:
         response += f"Điều trị: {disease_info['treatment']}"
         if 'description' in disease_info:
             response += f"\n\nMô tả: {disease_info['description']}"
+        reset_diagnosis_state(state)  # Reset state sau khi chẩn đoán
         return response, True
     
     # Nếu chưa đủ, chọn triệu chứng tiếp theo
@@ -95,6 +106,7 @@ def get_diagnosis_response(state: DiagnosisState) -> Tuple[str, bool]:
             response += f"Điều trị: {info['treatment']}"
             if 'description' in info:
                 response += f"\n\nMô tả: {info['description']}"
+            reset_diagnosis_state(state)  # Reset state sau khi chẩn đoán
             return response, True
     state.step = 'initial'
     return "Bạn có thể mô tả thêm các triệu chứng khác không?", False
